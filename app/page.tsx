@@ -1,270 +1,310 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+type ViewState = "landing" | "order" | "soldout" | "waiting";
+type Quantity = "2" | "4";
+type OrderErrors = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  zip?: string;
+  city?: string;
+  slot?: string;
+};
+
+const DELIVERY_SLOTS = [
+  "Samedi 19 avril · 10h-14h",
+  "Samedi 19 avril · 15h-19h",
+  "Dimanche 20 avril · 10h-14h",
+];
+
 export default function Home() {
+  const [view, setView] = useState<ViewState>("landing");
+  const [quantity, setQuantity] = useState<Quantity>("2");
+  const [slot, setSlot] = useState<string>("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [zip, setZip] = useState("");
+  const [city, setCity] = useState("");
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [errors, setErrors] = useState<OrderErrors>({});
+  const [submitError, setSubmitError] = useState("");
+
+  const total = useMemo(() => (quantity === "2" ? "8€" : "14€"), [quantity]);
+  const quantityLabel = useMemo(() => (quantity === "2" ? "2 bouteilles" : "4 bouteilles"), [quantity]);
+
+  const inputBaseClass =
+    "w-full border-0 border-b border-[var(--violet)]/45 bg-transparent pb-2 text-[0.95rem] text-[var(--violet)] outline-none transition focus:border-[var(--violet)]";
+  const buttonBaseClass =
+    "inline-flex items-center justify-center bg-[var(--violet)] px-6 py-3 text-xs font-medium uppercase tracking-[0.22em] text-white transition hover:opacity-90";
+  const cardBaseClass = "w-full rounded-[4px] border px-4 py-3 text-left text-sm uppercase tracking-[0.08em] transition";
+
+  const validateOrder = () => {
+    const nextErrors: OrderErrors = {};
+
+    if (!firstName.trim()) nextErrors.firstName = "Le prénom est requis.";
+    if (!lastName.trim()) nextErrors.lastName = "Le nom est requis.";
+    if (!email.trim()) nextErrors.email = "L'email est requis.";
+    if (!phone.trim()) nextErrors.phone = "Le téléphone est requis.";
+    if (!address.trim()) nextErrors.address = "L'adresse est requise.";
+    if (!zip.trim()) nextErrors.zip = "Le code postal est requis.";
+    if (!city.trim()) nextErrors.city = "La ville est requise.";
+    if (!slot) nextErrors.slot = "Sélectionnez un créneau de livraison.";
+
+    return nextErrors;
+  };
+
+  const handleOrderSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextErrors = validateOrder();
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setSubmitError("Merci de compléter les champs requis et choisir un créneau.");
+      return;
+    }
+
+    setSubmitError("");
+  };
+
   return (
-    <div className="relative min-h-screen bg-[#050508] text-white overflow-x-hidden">
-
-      {/* ── Ambient background blobs ── */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden>
-        <div className="absolute -top-40 -left-32 w-[600px] h-[600px] rounded-full bg-purple-600/20 blur-[140px] animate-glow-pulse" />
-        <div className="absolute -bottom-40 -right-32 w-[600px] h-[600px] rounded-full bg-cyan-500/20 blur-[140px] animate-glow-pulse delay-400" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-pink-500/10 blur-[120px] animate-glow-pulse delay-200" />
-      </div>
-
-      {/* ── Navbar ── */}
-      <nav className="relative z-50 flex items-center justify-between px-6 py-4 md:px-14 glass sticky top-0 border-b border-white/5">
-        <span className="text-2xl font-black tracking-tight gradient-text select-none">BissAll</span>
-
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-white/50">
-          <a href="#features" className="hover:text-white transition-colors">Services</a>
-          <a href="#stats"    className="hover:text-white transition-colors">Chiffres</a>
-          <a href="#contact"  className="hover:text-white transition-colors">Contact</a>
-        </div>
-
-        <a href="#contact" className="btn-primary !py-2.5 !px-5 !text-sm">
-          Commencer →
-        </a>
-      </nav>
-
-      {/* ── Hero ── */}
-      <section className="relative z-10 flex flex-col items-center justify-center min-h-[92vh] px-6 text-center py-20">
-
-        {/* Badge */}
-        <div className="animate-fade-in-up inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-purple-500/30 text-sm text-purple-300 mb-8">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
-          Nouveau &middot; Disponible maintenant
-        </div>
-
-        {/* Headline */}
-        <h1 className="animate-fade-in-up delay-100 text-[clamp(3.5rem,10vw,7.5rem)] font-black leading-[1.05] tracking-tight mb-6">
-          <span className="gradient-text">Crée.</span>
-          <br />
-          <span className="text-white">Innove.</span>
-          <br />
-          <span className="gradient-text">Déchire.</span>
-        </h1>
-
-        <p className="animate-fade-in-up delay-200 max-w-2xl text-lg md:text-xl text-white/55 mb-10 leading-relaxed">
-          La plateforme ultime pour les créatifs de demain.
-          Construis, partage et fais exploser tes projets avec une communauté qui déchire.
-        </p>
-
-        {/* CTAs */}
-        <div className="animate-fade-in-up delay-300 flex flex-col sm:flex-row gap-4">
-          <a href="#contact" className="btn-primary">
-            Rejoindre gratuitement 🚀
-          </a>
-          <a href="#features" className="btn-secondary">
-            Voir comment ça marche
-          </a>
-        </div>
-
-        {/* Social proof */}
-        <div className="animate-fade-in-up delay-400 flex items-center gap-5 mt-14">
-          <div className="flex -space-x-3" aria-hidden>
-            {["🧑‍💻", "👩‍🎨", "🧑‍🎤", "👨‍🚀", "👩‍💻"].map((emoji, i) => (
-              <div
-                key={i}
-                className="w-10 h-10 rounded-full glass border-2 border-purple-500/40 flex items-center justify-center text-base shadow-md"
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center bg-[var(--beige)] px-6 py-12 text-[var(--violet)]">
+      <section className="w-full rounded-[2.2rem] border border-[var(--violet)]/20 bg-[var(--beige)] p-8 shadow-[0_20px_45px_rgba(82,38,82,0.08)] md:p-12">
+        {view === "landing" && (
+          <div className="mx-auto flex w-full max-w-[520px] flex-col items-center text-center">
+            <div className="space-y-6">
+              <p
+                className="text-[82px] leading-none tracking-[0.14em] md:text-[90px]"
+                style={{ fontFamily: "var(--font-cormorant)" }}
               >
-                {emoji}
+                BISSALL
+              </p>
+              <div className="mx-auto aspect-[3/4] min-h-[400px] w-full max-w-[340px] border border-[var(--violet)]/20 bg-[var(--beige)] p-5">
+                <div className="flex h-full items-center justify-center border border-[var(--violet)]/25 text-center text-sm uppercase tracking-[0.2em] text-[var(--violet)]/75">
+                  Placeholder image
+                </div>
               </div>
-            ))}
+              <p
+                className="text-2xl italic md:text-3xl"
+                style={{ fontFamily: "var(--font-cormorant)" }}
+              >
+                Bissap artisanal · 50cl
+              </p>
+              <span className="inline-flex rounded-full border border-[var(--violet)]/35 px-4 py-1 text-[0.7rem] font-medium uppercase tracking-[0.2em]">
+                Disponible
+              </span>
+              <div>
+                <button className={buttonBaseClass} onClick={() => setView("order")}>
+                  PASSER COMMANDE
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="text-left leading-tight">
-            <p className="text-white font-bold text-sm">+12 000 créatifs</p>
-            <p className="text-white/40 text-xs">nous font confiance</p>
-          </div>
-        </div>
+        )}
 
-        {/* Floating side cards — desktop only */}
-        <div className="absolute top-1/3 left-[3%] animate-float hidden xl:block">
-          <div className="glass-card rounded-2xl p-4 w-52 pointer-events-none select-none">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg shadow-lg">
-                🔥
+        {view === "order" && (
+          <form className="space-y-10" onSubmit={handleOrderSubmit}>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h1
+                className="text-[32px] leading-none tracking-[0.1em]"
+                style={{ fontFamily: "var(--font-cormorant)" }}
+              >
+                BISSALL
+              </h1>
+              <button
+                className="text-xs uppercase tracking-[0.22em] text-[var(--violet)]"
+                onClick={() => setView("landing")}
+              >
+                ← Retour
+              </button>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <input
+                  required
+                  className={inputBaseClass}
+                  placeholder="Prénom"
+                  value={firstName}
+                  onChange={(event) => setFirstName(event.target.value)}
+                />
+                {errors.firstName && <p className="mt-2 text-xs">{errors.firstName}</p>}
               </div>
               <div>
-                <p className="text-xs font-semibold text-white">En tendance</p>
-                <p className="text-xs text-white/40">+2.4k vues aujourd&apos;hui</p>
+                <input
+                  required
+                  className={inputBaseClass}
+                  placeholder="Nom"
+                  value={lastName}
+                  onChange={(event) => setLastName(event.target.value)}
+                />
+                {errors.lastName && <p className="mt-2 text-xs">{errors.lastName}</p>}
+              </div>
+              <div>
+                <input
+                  required
+                  type="email"
+                  className={inputBaseClass}
+                  placeholder="Email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+                {errors.email && <p className="mt-2 text-xs">{errors.email}</p>}
+              </div>
+              <div>
+                <input
+                  required
+                  className={inputBaseClass}
+                  placeholder="Téléphone"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                />
+                {errors.phone && <p className="mt-2 text-xs">{errors.phone}</p>}
+              </div>
+              <div className="md:col-span-2">
+                <input
+                  required
+                  className={inputBaseClass}
+                  placeholder="Adresse"
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                />
+                {errors.address && <p className="mt-2 text-xs">{errors.address}</p>}
+              </div>
+              <div>
+                <input
+                  required
+                  className={inputBaseClass}
+                  placeholder="Code postal"
+                  value={zip}
+                  onChange={(event) => setZip(event.target.value)}
+                />
+                {errors.zip && <p className="mt-2 text-xs">{errors.zip}</p>}
+              </div>
+              <div>
+                <input
+                  required
+                  className={inputBaseClass}
+                  placeholder="Ville"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                />
+                {errors.city && <p className="mt-2 text-xs">{errors.city}</p>}
               </div>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-              <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-gradient-shift" />
+
+            <div className="grid gap-8 md:grid-cols-2">
+              <div className="space-y-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--violet)]">
+                  Quantité
+                </p>
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity("2")}
+                    className={`${cardBaseClass} ${
+                      quantity === "2"
+                        ? "border-[var(--violet)] bg-[var(--violet)] text-white"
+                        : "border-[var(--violet)]/30 bg-transparent text-[var(--violet)] hover:border-[var(--violet)]"
+                    }`}
+                  >
+                    2 bouteilles - 8€
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity("4")}
+                    className={`${cardBaseClass} ${
+                      quantity === "4"
+                        ? "border-[var(--violet)] bg-[var(--violet)] text-white"
+                        : "border-[var(--violet)]/30 bg-transparent text-[var(--violet)] hover:border-[var(--violet)]"
+                    }`}
+                  >
+                    4 bouteilles - 14€
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--violet)]">
+                  Créneau livraison
+                </p>
+                <div className="space-y-3">
+                  {DELIVERY_SLOTS.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => {
+                        setSlot(item);
+                        setErrors((prev) => ({ ...prev, slot: undefined }));
+                      }}
+                      className={`${cardBaseClass} ${
+                        slot === item
+                          ? "border-[var(--violet)] bg-[var(--violet)] text-white"
+                          : "border-[var(--violet)]/30 bg-transparent text-[var(--violet)] hover:border-[var(--violet)]"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+                {errors.slot && <p className="mt-2 text-xs">{errors.slot}</p>}
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="absolute bottom-1/4 right-[3%] animate-float-slow hidden xl:block">
-          <div className="glass-card rounded-2xl p-5 w-44 pointer-events-none select-none text-center">
-            <p className="text-4xl mb-1">⚡</p>
-            <p className="text-white font-bold text-sm">Ultra rapide</p>
-            <p className="text-white/40 text-xs mt-1">99.9 % uptime</p>
-          </div>
-        </div>
-      </section>
+            <div className="rounded-2xl border border-[var(--violet)]/20 bg-[var(--beige)] p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-[var(--violet)]">
+                Récapitulatif
+              </p>
+              <div className="mt-4 space-y-1 text-sm text-[var(--violet)]">
+                <p>{quantityLabel}</p>
+                <p>Livraison offerte</p>
+                <p className="pt-2 text-base text-[var(--violet)]">Total: {total}</p>
+              </div>
+            </div>
 
-      {/* ── Features ── */}
-      <section id="features" className="relative z-10 py-28 px-6 md:px-14">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
-              Tout ce dont tu as&nbsp;
-              <span className="gradient-text">besoin</span>
-            </h2>
-            <p className="text-white/45 text-lg max-w-2xl mx-auto">
-              Des outils pensés pour les jeunes créatifs qui veulent aller vite et frapper fort.
+            {submitError && <p className="text-sm uppercase tracking-[0.08em]">{submitError}</p>}
+            <button type="submit" className={buttonBaseClass}>
+              COMMANDER
+            </button>
+          </form>
+        )}
+
+        {(view === "soldout" || view === "waiting") && (
+          <div className="mx-auto max-w-xl space-y-8 text-center">
+            <h1
+              className="text-4xl md:text-5xl"
+              style={{ fontFamily: "var(--font-cormorant)" }}
+            >
+              {view === "soldout" ? "Stock épuisé" : "Liste d'attente"}
+            </h1>
+            <p className="text-sm text-[var(--violet)]">
+              Laisse ton email pour recevoir la prochaine disponibilité BISSALL.
             </p>
+            <div className="space-y-4">
+              <input
+                type="email"
+                className={inputBaseClass}
+                placeholder="Votre email"
+                value={notifyEmail}
+                onChange={(event) => setNotifyEmail(event.target.value)}
+              />
+              <button className={buttonBaseClass}>RECEVOIR UNE NOTIFICATION</button>
+            </div>
+            <button
+              className="text-xs uppercase tracking-[0.22em] text-[var(--violet)]"
+              onClick={() => setView("landing")}
+            >
+              Retour accueil
+            </button>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              {
-                icon: "🚀",
-                title: "Déploiement instant",
-                desc: "Lance tes projets en quelques secondes. Zéro friction, zéro prise de tête.",
-                glow: "group-hover:shadow-purple-500/20",
-              },
-              {
-                icon: "🎨",
-                title: "Design ultra moderne",
-                desc: "Des templates tellement stylés que même ta grand-mère approuve.",
-                glow: "group-hover:shadow-pink-500/20",
-              },
-              {
-                icon: "⚡",
-                title: "Performance maximale",
-                desc: "Optimisé pour être le plus rapide du monde. Speed is king.",
-                glow: "group-hover:shadow-cyan-500/20",
-              },
-              {
-                icon: "🤝",
-                title: "Communauté active",
-                desc: "12 k créatifs qui s'entraident, partagent et se challengent chaque jour.",
-                glow: "group-hover:shadow-green-500/20",
-              },
-              {
-                icon: "🔒",
-                title: "Sécurité béton",
-                desc: "Tes données sont protégées. On ne rigole vraiment pas avec ça.",
-                glow: "group-hover:shadow-amber-500/20",
-              },
-              {
-                icon: "📊",
-                title: "Analytics en temps réel",
-                desc: "Suis tes stats live. Sache exactement qui regarde ton taf.",
-                glow: "group-hover:shadow-rose-500/20",
-              },
-            ].map(({ icon, title, desc, glow }) => (
-              <article
-                key={title}
-                className={`group glass-card rounded-2xl p-6 cursor-pointer shadow-lg ${glow}`}
-              >
-                <span className="text-4xl block mb-4" aria-hidden>{icon}</span>
-                <h3 className="text-white font-bold text-lg mb-2">{title}</h3>
-                <p className="text-white/45 text-sm leading-relaxed">{desc}</p>
-              </article>
-            ))}
-          </div>
-        </div>
+        )}
       </section>
-
-      {/* ── Stats ── */}
-      <section id="stats" className="relative z-10 py-16 px-6 md:px-14">
-        <div className="max-w-5xl mx-auto glass rounded-3xl border border-white/8 p-10 md:p-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
-            {[
-              { value: "12K+", label: "Utilisateurs" },
-              { value: "98 %", label: "Satisfaction" },
-              { value: "< 3 s", label: "Déploiement" },
-              { value: "24/7", label: "Support" },
-            ].map(({ value, label }) => (
-              <div key={label}>
-                <p className="text-4xl md:text-5xl font-black gradient-text mb-2">{value}</p>
-                <p className="text-white/45 text-sm font-medium">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Testimonials ── */}
-      <section className="relative z-10 py-24 px-6 md:px-14">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-center text-4xl md:text-5xl font-black mb-4">
-            Ils <span className="gradient-text">kiffent</span> BissAll
-          </h2>
-          <p className="text-center text-white/45 text-lg mb-14">La parole est à ceux qui l&apos;utilisent.</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              {
-                quote: "Sérieusement le meilleur outil que j'ai utilisé. Mon portfolio a explosé en 2 semaines.",
-                name: "Yasmine B.",
-                role: "Designer UX · Paris",
-                avatar: "👩‍🎨",
-              },
-              {
-                quote: "J'ai déployé mon app en moins de 5 minutes. Propre, rapide, parfait.",
-                name: "Karim D.",
-                role: "Dev fullstack · Lyon",
-                avatar: "🧑‍💻",
-              },
-              {
-                quote: "La communauté est incroyable. J'ai trouvé des collabs en quelques jours.",
-                name: "Léa M.",
-                role: "Créatrice de contenu · Bordeaux",
-                avatar: "👩‍💻",
-              },
-            ].map(({ quote, name, role, avatar }) => (
-              <div key={name} className="glass-card rounded-2xl p-6 flex flex-col gap-4">
-                <div className="flex text-yellow-400 text-sm gap-0.5" aria-label="5 étoiles">
-                  {"★★★★★".split("").map((s, i) => <span key={i}>{s}</span>)}
-                </div>
-                <p className="text-white/70 text-sm leading-relaxed flex-1">&ldquo;{quote}&rdquo;</p>
-                <div className="flex items-center gap-3 pt-2 border-t border-white/8">
-                  <span className="text-2xl" aria-hidden>{avatar}</span>
-                  <div>
-                    <p className="text-white text-sm font-semibold">{name}</p>
-                    <p className="text-white/40 text-xs">{role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section id="contact" className="relative z-10 py-28 px-6 md:px-14 text-center">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-5xl md:text-6xl font-black mb-6 leading-[1.1]">
-            Prêt à <span className="gradient-text">tout déchirer</span>&nbsp;?
-          </h2>
-          <p className="text-white/50 text-lg mb-10 leading-relaxed">
-            Rejoins des milliers de créatifs qui utilisent BissAll pour concrétiser leurs idées.
-            C&apos;est gratuit pour commencer.
-          </p>
-          <a href="#" className="btn-primary text-lg !px-10 !py-5">
-            Créer mon compte — c&apos;est gratuit 🎯
-          </a>
-          <p className="text-white/25 text-xs mt-6">
-            Aucune carte bancaire requise &nbsp;·&nbsp; Annule quand tu veux
-          </p>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="relative z-10 border-t border-white/5 py-10 px-6 md:px-14">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <span className="text-2xl font-black gradient-text select-none">BissAll</span>
-          <nav className="flex gap-6 text-white/35 text-sm" aria-label="Liens footer">
-            <a href="#" className="hover:text-white transition-colors">Mentions légales</a>
-            <a href="#" className="hover:text-white transition-colors">Confidentialité</a>
-            <a href="#" className="hover:text-white transition-colors">Contact</a>
-          </nav>
-          <p className="text-white/25 text-sm">© 2026 BissAll. Tous droits réservés.</p>
-        </div>
-      </footer>
-
-    </div>
+    </main>
   );
 }

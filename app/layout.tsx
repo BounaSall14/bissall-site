@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
 
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["300", "400", "600"],
+  style: ["normal", "italic"],
+});
+
+const jost = Jost({
+  variable: "--font-jost",
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+});
+
 export const metadata: Metadata = {
-  title: "BissAll — Crée. Innove. Déchire.",
-  description: "La plateforme ultime pour les créatifs de demain. Construis et partage tes projets avec une communauté qui déchire.",
+  title: "BISSALL — Bissap artisanal",
+  description: "Bissap artisanal fait maison à Paris. Sans additifs, sans conservateurs.",
 };
 
 export default function RootLayout({
@@ -14,11 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="fr"
-      className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="fr" className={`${cormorant.variable} ${jost.variable}`}>
+      <body className="min-h-screen" style={{ background: "var(--beige)" }}>
+        {children}
+      </body>
     </html>
   );
 }
