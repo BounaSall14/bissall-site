@@ -1,13 +1,125 @@
 @import "tailwindcss";
 
 :root {
-  --beige: #F5EFE6;
-  --violet: #a861a2;
+  --beige:        #F5EFE6;
+  --beige-dark:   #EDE4D8;
+  --violet:       #a861a2;
+  --violet-hover: #8e4d88;
+  --error:        #C0392B;
+  --text:         #1a0d19;
+  --font-cormorant: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-jost:      'Jost', system-ui, -apple-system, sans-serif;
 }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
 
 body {
   background: var(--beige);
-  color: var(--violet);
-  font-family: var(--font-jost), sans-serif;
+  color: var(--text);
+  font-family: var(--font-jost);
   font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+input::placeholder { color: rgba(168, 97, 162, 0.38); }
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--violet);
+  color: #fff;
+  border: none;
+  font-family: var(--font-jost);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 16px 48px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover  { background: var(--violet-hover); }
+.btn-primary:active { background: var(--violet-hover); }
+.btn-primary.full   { width: 100%; padding-left: 0; padding-right: 0; }
+
+/* ── Section labels ── */
+.section-label {
+  font-family: var(--font-jost);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(168, 97, 162, 0.5);
+  display: block;
+  margin-bottom: 14px;
+}
+
+/* ── Form fields ── */
+.field-input {
+  display: block;
+  width: 100%;
+  font-family: var(--font-jost);
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(168, 97, 162, 0.22);
+  outline: none;
+  padding: 8px 0;
+  transition: border-color 0.2s;
+}
+.field-input:focus  { border-bottom-color: var(--violet); }
+.field-input.error  { border-bottom-color: var(--error); }
+.field-error {
+  font-family: var(--font-jost);
+  font-size: 11px;
+  color: var(--error);
+  margin-top: 5px;
+  display: block;
+}
+
+/* ── Selection cards (quantity / slots) ── */
+.sel-card {
+  border-radius: 4px;
+  border: 1px solid rgba(168, 97, 162, 0.15);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: var(--font-jost);
+  color: var(--text);
+}
+.sel-card.selected {
+  border-color: var(--violet);
+  background: rgba(168, 97, 162, 0.05);
+}
+.sel-card:not(.selected):hover { border-color: rgba(168, 97, 162, 0.4); }
+
+/* ── Footer ── */
+.site-footer {
+  border-top: 1px solid rgba(168, 97, 162, 0.1);
+  padding: 26px 24px;
+  text-align: center;
+}
+.site-footer a {
+  font-family: var(--font-jost);
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(168, 97, 162, 0.45);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.site-footer a:hover { color: var(--violet); }
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .order-grid-2  { display: flex !important; flex-direction: column !important; }
+  .order-grid-cp { display: flex !important; flex-direction: column !important; }
+  .product-section { flex-direction: column !important; align-items: center !important; }
+  .order-header { padding: 14px 20px !important; }
+  .order-main   { padding: 36px 16px 64px !important; }
 }
