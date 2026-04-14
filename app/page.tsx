@@ -1,39 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type ViewState = "landing" | "order" | "soldout" | "waiting";
+type ViewState = "loading" | "landing" | "order" | "soldout" | "waiting";
+
+interface Slot {
+  id:     string;
+  date:   string;
+  time:   string;
+  status: "available" | "filling";
+}
 
 interface OrderErrors {
   firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  zip?: string;
-  city?: string;
-  slot?: string;
+  lastName?:  string;
+  email?:     string;
+  phone?:     string;
+  address?:   string;
+  zip?:       string;
+  city?:      string;
+  slot?:      string;
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────
 
 const QUANTITIES = [
-  { value: "2", label: "2", price: "8,00 €", unit: 8 },
-  { value: "4", label: "4", price: "14,00 €", unit: 3.5 },
-] as const;
-
-const SLOTS = [
-  { id: "sat-am", date: "Samedi 19 avril",   time: "10h – 14h", status: "available" },
-  { id: "sat-pm", date: "Samedi 19 avril",   time: "14h – 18h", status: "filling"   },
-  { id: "sun-am", date: "Dimanche 20 avril", time: "10h – 14h", status: "available" },
-  { id: "sun-pm", date: "Dimanche 20 avril", time: "14h – 18h", status: "available" },
+  { value: "2", label: "2", price: "8,00 €", numeric: 8  },
+  { value: "4", label: "4", price: "14,00 €", numeric: 14 },
 ] as const;
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 
-/** Portrait 3:4 product placeholder with a discrete hibiscus SVG */
+/** Portrait 3:4 placeholder with a discrete hibiscus SVG — no text */
 function ProductImage({
   height = 420,
   maxWidth = 320,
@@ -59,7 +59,6 @@ function ProductImage({
         transition: "filter 0.3s",
       }}
     >
-      {/* Hibiscus icon — 5 petals rotated around centre */}
       <svg width="48" height="48" viewBox="0 0 60 60" fill="none" aria-hidden>
         {[0, 72, 144, 216, 288].map((deg) => (
           <ellipse
@@ -88,11 +87,11 @@ function Field({
   type = "text",
   autoComplete,
 }: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  type?: string;
+  label:         string;
+  value:         string;
+  onChange:      (v: string) => void;
+  error?:        string;
+  type?:         string;
   autoComplete?: string;
 }) {
   return (
@@ -124,25 +123,86 @@ function Footer() {
   );
 }
 
+// ── Loading screen ────────────────────────────────────────────────────────
+
+function LoadingScreen() {
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-cormorant)",
+          fontSize: 32,
+          letterSpacing: "8px",
+          color: "var(--text)",
+          opacity: 0.4,
+        }}
+      >
+        BISSALL
+      </span>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const [view, setView]           = useState<ViewState>("landing");
-  const [quantity, setQuantity]   = useState<string>("2");
-  const [slot, setSlot]           = useState("");
+  // ── Config state ──
+  const [view,  setView]  = useState<ViewState>("loading");
+  const [slots, setSlots] = useState<Slot[]>([]);
+
+  // ── Order form ──
+  const [quantity,  setQuantity]  = useState("2");
+  const [slot,      setSlot]      = useState("");
   const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName]   = useState("");
-  const [email, setEmail]         = useState("");
-  const [phone, setPhone]         = useState("");
-  const [address, setAddress]     = useState("");
-  const [zip, setZip]             = useState("");
-  const [city, setCity]           = useState("");
+  const [lastName,  setLastName]  = useState("");
+  const [email,     setEmail]     = useState("");
+  const [phone,     setPhone]     = useState("");
+  const [address,   setAddress]   = useState("");
+  const [zip,       setZip]       = useState("");
+  const [city,      setCity]      = useState("");
+  const [errors,    setErrors]    = useState<OrderErrors>({});
+  const [submitting,    setSubmitting]    = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // ── Notification (soldout / waiting) ──
   const [notifyEmail, setNotifyEmail] = useState("");
-  const [notifyDone, setNotifyDone]   = useState(false);
-  const [errors, setErrors]       = useState<OrderErrors>({});
+  const [notifyDone,  setNotifyDone]  = useState(false);
+  const [notifyError, setNotifyError] = useState("");
+
+  // ── Load config on mount ──────────────────────────────────────────────────
+  useEffect(() => {
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((data: { statut?: string; slots?: Slot[] }) => {
+        if (data.statut === "Ouvert")   setView("landing");
+        else if (data.statut === "Soldout") setView("soldout");
+        else                                setView("waiting");
+
+        setSlots(data.slots ?? []);
+      })
+      .catch((err) => {
+        console.error("Failed to load config:", err);
+        // Fallback: show landing so the site is usable
+        setView("landing");
+      });
+  }, []);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
   const clearErr = (field: keyof OrderErrors) =>
-    setErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
 
   const validate = (): OrderErrors => {
     const e: OrderErrors = {};
@@ -158,20 +218,86 @@ export default function Home() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const selectedQty  = QUANTITIES.find((q) => q.value === quantity)!;
+  const selectedSlot = slots.find((s) => s.id === slot);
+  const slotLabel    = selectedSlot
+    ? `${selectedSlot.date} · ${selectedSlot.time}`
+    : slot;
+
+  // ── Form submit → /api/commande ───────────────────────────────────────────
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
-    if (Object.keys(errs).length === 0) {
-      // TODO: submit order
-      alert("Commande confirmée !");
+    if (Object.keys(errs).length > 0) return;
+
+    setSubmitting(true);
+    setSubmitMessage("");
+    setSubmitSuccess(false);
+
+    try {
+      const res = await fetch("/api/commande", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName, lastName, email, phone,
+          address, zip, city,
+          quantity: Number(quantity),
+          slot:     slotLabel,
+          price:    selectedQty.numeric,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSubmitMessage(data.error ?? "Une erreur est survenue.");
+        return;
+      }
+
+      setSubmitSuccess(true);
+      setSubmitMessage(
+        "Commande confirmée\u00a0! Vous recevrez un email de confirmation."
+      );
+    } catch {
+      setSubmitMessage("Impossible de joindre le serveur. Veuillez réessayer.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const selectedQty = QUANTITIES.find((q) => q.value === quantity)!;
-  const totalPrice  = quantity === "2" ? "8 €" : "14 €";
+  // ── Notification submit → /api/notification ───────────────────────────────
 
-  // ── LANDING ──────────────────────────────────────────────────────────────
+  const handleNotify = async () => {
+    if (!notifyEmail.trim()) return;
+    setNotifyError("");
+
+    try {
+      const res = await fetch("/api/notification", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: notifyEmail }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setNotifyError(data.error ?? "Une erreur est survenue.");
+        return;
+      }
+
+      setNotifyDone(true);
+    } catch {
+      setNotifyError("Impossible de joindre le serveur. Veuillez réessayer.");
+    }
+  };
+
+  // ── LOADING ───────────────────────────────────────────────────────────────
+
+  if (view === "loading") return <LoadingScreen />;
+
+  // ── LANDING ───────────────────────────────────────────────────────────────
 
   if (view === "landing") {
     return (
@@ -179,102 +305,67 @@ export default function Home() {
         <main
           style={{
             flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "60px 24px",
-            textAlign: "center",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            padding: "60px 24px", textAlign: "center",
           }}
         >
-          {/* Logo */}
           <h1
             style={{
               fontFamily: "var(--font-cormorant)",
               fontSize: "clamp(64px, 14vw, 88px)",
-              letterSpacing: "0.22em",
-              fontWeight: 400,
+              letterSpacing: "0.22em", fontWeight: 400,
               color: "var(--text)",
-              margin: "0 0 52px",
-              lineHeight: 1,
+              margin: "0 0 52px", lineHeight: 1,
             }}
           >
             BISSALL
           </h1>
 
-          {/* Product image */}
           <div style={{ marginBottom: 36 }}>
             <ProductImage />
           </div>
 
-          {/* Subtitle */}
           <p
             style={{
               fontFamily: "var(--font-cormorant)",
-              fontSize: 22,
-              fontStyle: "italic",
-              fontWeight: 400,
+              fontSize: 22, fontStyle: "italic", fontWeight: 400,
               color: "rgba(26,13,25,0.6)",
-              margin: "0 0 22px",
-              letterSpacing: "0.03em",
+              margin: "0 0 22px", letterSpacing: "0.03em",
             }}
           >
             Bissap artisanal · 50cl
           </p>
 
-          {/* Status pill */}
           <div
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
+              display: "inline-flex", alignItems: "center", gap: 8,
               padding: "6px 18px",
               border: "1px solid rgba(168,97,162,0.25)",
-              borderRadius: 100,
-              marginBottom: 40,
+              borderRadius: 100, marginBottom: 40,
             }}
           >
-            <span
-              style={{
-                width: 7, height: 7,
-                borderRadius: "50%",
-                background: "#27AE60",
-                display: "block",
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "var(--font-jost)",
-                fontSize: 11,
-                letterSpacing: "2.5px",
-                fontWeight: 500,
-                color: "var(--text)",
-              }}
-            >
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#27AE60", display: "block" }} />
+            <span style={{ fontFamily: "var(--font-jost)", fontSize: 11, letterSpacing: "2.5px", fontWeight: 500, color: "var(--text)" }}>
               DISPONIBLE
             </span>
           </div>
 
-          {/* CTA */}
           <button className="btn-primary" onClick={() => setView("order")}>
             PASSER COMMANDE
           </button>
 
-          {/* Dev state navigation */}
-          <div style={{ marginTop: 64, display: "flex", gap: 32, opacity: 0.28 }}>
+          {/* Dev state navigation — barely visible */}
+          <div style={{ marginTop: 64, display: "flex", gap: 32, opacity: 0.25 }}>
             {(["soldout", "waiting"] as ViewState[]).map((s) => (
               <button
                 key={s}
                 onClick={() => setView(s)}
                 style={{
-                  fontFamily: "var(--font-jost)",
-                  fontSize: 11,
-                  letterSpacing: "1px",
-                  color: "var(--violet)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 0,
+                  fontFamily: "var(--font-jost)", fontSize: 11,
+                  letterSpacing: "1px", color: "var(--violet)",
+                  background: "none", border: "none",
+                  cursor: "pointer", padding: 0,
                 }}
               >
                 → {s}
@@ -282,7 +373,6 @@ export default function Home() {
             ))}
           </div>
         </main>
-
         <Footer />
       </div>
     );
@@ -305,24 +395,17 @@ export default function Home() {
             padding: "16px 40px",
           }}
         >
-          <span
-            style={{
-              fontFamily: "var(--font-cormorant)",
-              fontSize: 22, fontWeight: 400,
-              letterSpacing: 6,
-              color: "var(--text)",
-            }}
-          >
+          <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, fontWeight: 400, letterSpacing: 6, color: "var(--text)" }}>
             BISSALL
           </span>
           <button
             onClick={() => setView("landing")}
             style={{
-              fontFamily: "var(--font-jost)",
-              fontSize: 12, letterSpacing: "2px",
-              textTransform: "uppercase",
+              fontFamily: "var(--font-jost)", fontSize: 12,
+              letterSpacing: "2px", textTransform: "uppercase",
               color: "rgba(168,97,162,0.65)",
-              background: "none", border: "none", cursor: "pointer", padding: 0,
+              background: "none", border: "none",
+              cursor: "pointer", padding: 0,
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "var(--violet)")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(168,97,162,0.65)")}
@@ -341,46 +424,25 @@ export default function Home() {
             }}
           >
 
-            {/* ── Product section ── */}
+            {/* ── Product info ── */}
             <div
               className="product-section"
               style={{ display: "flex", gap: 40, alignItems: "flex-start" }}
             >
               <ProductImage height={260} maxWidth={195} />
               <div style={{ flex: 1, paddingTop: 8 }}>
-                <span className="section-label" style={{ marginBottom: 10 }}>
-                  Bissap artisanal
-                </span>
-                <h2
-                  style={{
-                    fontFamily: "var(--font-cormorant)",
-                    fontSize: 34, fontWeight: 500,
-                    letterSpacing: "0.06em",
-                    color: "var(--text)",
-                    margin: "0 0 18px",
-                    lineHeight: 1.1,
-                  }}
-                >
+                <span className="section-label" style={{ marginBottom: 10 }}>Bissap artisanal</span>
+                <h2 style={{
+                  fontFamily: "var(--font-cormorant)", fontSize: 34, fontWeight: 500,
+                  letterSpacing: "0.06em", color: "var(--text)",
+                  margin: "0 0 18px", lineHeight: 1.1,
+                }}>
                   BISSALL 50cl
                 </h2>
-                <p
-                  style={{
-                    fontFamily: "var(--font-jost)",
-                    fontSize: 13, lineHeight: 1.7,
-                    color: "rgba(26,13,25,0.55)",
-                    marginBottom: 8,
-                  }}
-                >
+                <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, lineHeight: 1.7, color: "rgba(26,13,25,0.55)", marginBottom: 8 }}>
                   Fleurs d&apos;hibiscus · Sucre · Eau filtrée
                 </p>
-                <p
-                  style={{
-                    fontFamily: "var(--font-jost)",
-                    fontSize: 12,
-                    color: "rgba(26,13,25,0.35)",
-                    letterSpacing: "0.2px",
-                  }}
-                >
+                <p style={{ fontFamily: "var(--font-jost)", fontSize: 12, color: "rgba(26,13,25,0.35)" }}>
                   Sans additifs · Sans conservateurs · Fait maison à Paris
                 </p>
               </div>
@@ -398,42 +460,15 @@ export default function Home() {
                       type="button"
                       onClick={() => setQuantity(q.value)}
                       className={`sel-card${sel ? " selected" : ""}`}
-                      style={{
-                        flex: 1,
-                        padding: "20px 12px",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
+                      style={{ flex: 1, padding: "20px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
                     >
-                      <span
-                        style={{
-                          fontFamily: "var(--font-cormorant)",
-                          fontSize: 36, fontWeight: 500,
-                          color: sel ? "var(--violet)" : "var(--text)",
-                          lineHeight: 1,
-                        }}
-                      >
+                      <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 36, fontWeight: 500, color: sel ? "var(--violet)" : "var(--text)", lineHeight: 1 }}>
                         {q.label}
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-jost)",
-                          fontSize: 11, letterSpacing: "0.5px",
-                          color: "rgba(168,97,162,0.5)",
-                        }}
-                      >
-                        bouteille{q.value === "2" ? "s" : "s"}
+                      <span style={{ fontFamily: "var(--font-jost)", fontSize: 11, letterSpacing: "0.5px", color: "rgba(168,97,162,0.5)" }}>
+                        bouteilles
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-jost)",
-                          fontSize: 13, fontWeight: 500,
-                          color: sel ? "var(--violet)" : "rgba(26,13,25,0.5)",
-                          marginTop: 4,
-                        }}
-                      >
+                      <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, fontWeight: 500, color: sel ? "var(--violet)" : "rgba(26,13,25,0.5)", marginTop: 4 }}>
                         {q.price}
                       </span>
                     </button>
@@ -442,85 +477,66 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ── Delivery slots ── */}
+            {/* ── Delivery slots (dynamic from API) ── */}
             <div>
               <SectionLabel>Créneau de livraison</SectionLabel>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {SLOTS.map((s) => {
-                  const sel = slot === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => { setSlot(s.id); clearErr("slot"); }}
-                      className={`sel-card${sel ? " selected" : ""}`}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "14px 18px",
-                        textAlign: "left",
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: "var(--font-jost)",
-                            fontSize: 14, fontWeight: 500,
-                            color: sel ? "var(--violet)" : "var(--text)",
-                            marginBottom: 3,
-                          }}
-                        >
-                          {s.date}
+
+              {slots.length === 0 ? (
+                <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.4)", fontStyle: "italic" }}>
+                  Aucun créneau disponible pour le moment.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {slots.map((s) => {
+                    const sel = slot === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => { setSlot(s.id); clearErr("slot"); }}
+                        className={`sel-card${sel ? " selected" : ""}`}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", textAlign: "left" }}
+                      >
+                        <div>
+                          <div style={{ fontFamily: "var(--font-jost)", fontSize: 14, fontWeight: 500, color: sel ? "var(--violet)" : "var(--text)", marginBottom: 3 }}>
+                            {s.date}
+                          </div>
+                          <div style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(168,97,162,0.55)" }}>
+                            {s.time}
+                          </div>
                         </div>
-                        <div style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(168,97,162,0.55)" }}>
-                          {s.time}
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-jost)",
-                          fontSize: 10, letterSpacing: "0.3px", fontWeight: 500,
+                        <span style={{
+                          fontFamily: "var(--font-jost)", fontSize: 10,
+                          letterSpacing: "0.3px", fontWeight: 500,
                           padding: "3px 10px", borderRadius: 100,
                           flexShrink: 0, marginLeft: 12,
-                          background: s.status === "filling"
-                            ? "rgba(230,126,34,0.1)"
-                            : "rgba(46,204,113,0.1)",
-                          color: s.status === "filling" ? "#B7770D" : "#1E8449",
-                        }}
-                      >
-                        {s.status === "filling" ? "Bientôt complet" : "Disponible"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                          background: s.status === "filling" ? "rgba(230,126,34,0.1)" : "rgba(46,204,113,0.1)",
+                          color:      s.status === "filling" ? "#B7770D" : "#1E8449",
+                        }}>
+                          {s.status === "filling" ? "Bientôt complet" : "Disponible"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {errors.slot && <span className="field-error" style={{ marginTop: 8 }}>{errors.slot}</span>}
             </div>
 
-            {/* ── Delivery info form ── */}
+            {/* ── Form ── */}
             <div>
               <SectionLabel>Informations de livraison</SectionLabel>
               <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-                <div
-                  className="order-grid-2"
-                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}
-                >
+                <div className="order-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
                   <Field label="Prénom"   value={firstName} onChange={(v) => { setFirstName(v); clearErr("firstName"); }} error={errors.firstName} autoComplete="given-name" />
                   <Field label="Nom"      value={lastName}  onChange={(v) => { setLastName(v);  clearErr("lastName");  }} error={errors.lastName}  autoComplete="family-name" />
                 </div>
-                <div
-                  className="order-grid-2"
-                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}
-                >
+                <div className="order-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
                   <Field label="Email"     type="email" value={email} onChange={(v) => { setEmail(v); clearErr("email"); }} error={errors.email} autoComplete="email" />
                   <Field label="Téléphone" type="tel"   value={phone} onChange={(v) => { setPhone(v); clearErr("phone"); }} error={errors.phone} autoComplete="tel" />
                 </div>
                 <Field label="Adresse" value={address} onChange={(v) => { setAddress(v); clearErr("address"); }} error={errors.address} autoComplete="street-address" />
-                <div
-                  className="order-grid-cp"
-                  style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 24 }}
-                >
+                <div className="order-grid-cp" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 24 }}>
                   <Field label="Code postal" value={zip}  onChange={(v) => { setZip(v);  clearErr("zip");  }} error={errors.zip}  autoComplete="postal-code" />
                   <Field label="Ville"       value={city} onChange={(v) => { setCity(v); clearErr("city"); }} error={errors.city} autoComplete="address-level2" />
                 </div>
@@ -528,51 +544,52 @@ export default function Home() {
             </div>
 
             {/* ── Summary ── */}
-            <div
-              style={{
-                background: "rgba(255,252,248,0.7)",
-                borderRadius: 4,
-                padding: "24px 28px",
-              }}
-            >
+            <div style={{ background: "rgba(255,252,248,0.7)", borderRadius: 4, padding: "24px 28px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                 <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>
-                  {selectedQty.label} bouteilles × {selectedQty.unit.toFixed(2).replace(".", ",")} €
+                  {selectedQty.label} bouteilles × {(selectedQty.numeric / Number(selectedQty.value)).toFixed(2).replace(".", ",")} €
                 </span>
                 <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>
                   {selectedQty.price}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-                <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>
-                  Livraison
-                </span>
-                <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "#1E8449" }}>
-                  Offerte
-                </span>
+                <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>Livraison</span>
+                <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "#1E8449" }}>Offerte</span>
               </div>
-              <div
-                style={{
-                  borderTop: "1px solid rgba(168,97,162,0.12)",
-                  paddingTop: 18,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                }}
-              >
-                <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, fontWeight: 500, color: "var(--text)" }}>
-                  Total
-                </span>
+              <div style={{ borderTop: "1px solid rgba(168,97,162,0.12)", paddingTop: 18, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, fontWeight: 500, color: "var(--text)" }}>Total</span>
                 <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 30, fontWeight: 500, color: "var(--text)" }}>
-                  {totalPrice}
+                  {selectedQty.price}
                 </span>
               </div>
             </div>
 
-            {/* ── Submit ── */}
-            <button type="submit" className="btn-primary full">
-              COMMANDER
-            </button>
+            {/* ── Submit feedback ── */}
+            {submitMessage && (
+              <p style={{
+                fontFamily: "var(--font-jost)", fontSize: 13,
+                color: submitSuccess ? "#1E8449" : "var(--error)",
+                textAlign: "center",
+                padding: "12px 16px",
+                background: submitSuccess ? "rgba(46,204,113,0.07)" : "rgba(192,57,43,0.06)",
+                borderRadius: 4,
+              }}>
+                {submitMessage}
+              </p>
+            )}
+
+            {/* ── Submit button ── */}
+            {!submitSuccess && (
+              <button
+                type="submit"
+                className="btn-primary full"
+                disabled={submitting}
+                style={{ opacity: submitting ? 0.65 : 1, cursor: submitting ? "wait" : "pointer" }}
+              >
+                {submitting ? "ENVOI EN COURS…" : "COMMANDER"}
+              </button>
+            )}
           </div>
         </form>
 
@@ -587,105 +604,71 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <main
-        style={{
-          flex: 1,
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          padding: "60px 24px", textAlign: "center",
-        }}
-      >
-        {/* Logo */}
-        <span
-          style={{
-            fontFamily: "var(--font-cormorant)",
-            fontSize: 32, letterSpacing: "8px", fontWeight: 400,
-            color: "var(--text)",
-            marginBottom: 52, display: "block",
-          }}
-        >
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
+
+        <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 32, letterSpacing: "8px", fontWeight: 400, color: "var(--text)", marginBottom: 52, display: "block" }}>
           BISSALL
         </span>
 
-        {/* Greyscale product image */}
         <div style={{ marginBottom: 44 }}>
           <ProductImage grayscale />
         </div>
 
-        {/* Title */}
-        <h1
-          style={{
-            fontFamily: "var(--font-cormorant)",
-            fontSize: "clamp(32px, 5vw, 48px)",
-            fontStyle: "italic", fontWeight: 400,
-            color: "var(--text)",
-            margin: "0 0 12px",
-            letterSpacing: "0.02em",
-          }}
-        >
+        <h1 style={{
+          fontFamily: "var(--font-cormorant)",
+          fontSize: "clamp(32px, 5vw, 48px)",
+          fontStyle: "italic", fontWeight: 400,
+          color: "var(--text)",
+          margin: "0 0 12px", letterSpacing: "0.02em",
+        }}>
           {isSoldOut ? "Production épuisée" : "Prochaine production en préparation"}
         </h1>
 
-        <p
-          style={{
-            fontFamily: "var(--font-jost)",
-            fontSize: 14, color: "rgba(26,13,25,0.42)",
-            letterSpacing: "0.3px", marginBottom: 44,
-          }}
-        >
-          {isSoldOut
-            ? "Le prochain lancement arrive bientôt."
-            : "Soyez les premiers informés."}
+        <p style={{ fontFamily: "var(--font-jost)", fontSize: 14, color: "rgba(26,13,25,0.42)", letterSpacing: "0.3px", marginBottom: 44 }}>
+          {isSoldOut ? "Le prochain lancement arrive bientôt." : "Soyez les premiers informés."}
         </p>
 
         {/* Email capture */}
         {notifyDone ? (
-          <p
-            style={{
-              fontFamily: "var(--font-cormorant)",
-              fontSize: 24, fontStyle: "italic",
-              color: "var(--violet)",
-            }}
-          >
-            Merci — nous vous préviendrons !
+          <p style={{ fontFamily: "var(--font-cormorant)", fontSize: 24, fontStyle: "italic", color: "var(--violet)" }}>
+            Merci\u00a0— nous vous préviendrons\u00a0!
           </p>
         ) : (
           <div style={{ width: "100%", maxWidth: 320 }}>
             <input
               type="email"
               value={notifyEmail}
-              onChange={(e) => setNotifyEmail(e.target.value)}
+              onChange={(e) => { setNotifyEmail(e.target.value); setNotifyError(""); }}
               placeholder="Votre email"
               className="field-input"
               style={{ textAlign: "center", marginBottom: 24 }}
             />
+            {notifyError && (
+              <p style={{ fontFamily: "var(--font-jost)", fontSize: 11, color: "var(--error)", marginBottom: 12 }}>
+                {notifyError}
+              </p>
+            )}
             <button
               className="btn-primary full"
-              onClick={() => { if (notifyEmail) setNotifyDone(true); }}
+              onClick={handleNotify}
               type="button"
             >
-              {isSoldOut ? "M'AVERTIR" : "M'INSCRIRE"}
+              {isSoldOut ? "M\u2019AVERTIR" : "M\u2019INSCRIRE"}
             </button>
-            <p
-              style={{
-                fontFamily: "var(--font-jost)",
-                fontSize: 11, color: "rgba(26,13,25,0.3)",
-                letterSpacing: "0.3px", marginTop: 16,
-              }}
-            >
+            <p style={{ fontFamily: "var(--font-jost)", fontSize: 11, color: "rgba(26,13,25,0.3)", letterSpacing: "0.3px", marginTop: 16 }}>
               Pas de spam. Un email au moment du lancement.
             </p>
           </div>
         )}
 
-        {/* Back to landing */}
         <button
-          onClick={() => { setView("landing"); setNotifyDone(false); setNotifyEmail(""); }}
+          onClick={() => { setView("landing"); setNotifyDone(false); setNotifyEmail(""); setNotifyError(""); }}
           style={{
-            fontFamily: "var(--font-jost)",
-            marginTop: 52, fontSize: 11, letterSpacing: "1.5px",
+            fontFamily: "var(--font-jost)", marginTop: 52,
+            fontSize: 11, letterSpacing: "1.5px",
             color: "rgba(26,13,25,0.28)",
-            background: "none", border: "none", cursor: "pointer", padding: 0,
+            background: "none", border: "none",
+            cursor: "pointer", padding: 0,
           }}
         >
           ← Accueil
