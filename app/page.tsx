@@ -181,16 +181,21 @@ export default function Home() {
   useEffect(() => {
     fetch("/api/config")
       .then((r) => r.json())
-      .then((data: { statut?: string; slots?: Slot[] }) => {
-        if (data.statut === "Ouvert")   setView("landing");
-        else if (data.statut === "Soldout") setView("soldout");
-        else                                setView("waiting");
-
+      .then((data) => {
+        console.log("[page] /api/config response:", data);
+        if (data.error) {
+          console.error("[page] Config API error:", data.error);
+          setView("landing");
+          return;
+        }
+        const statut = data.statut as string;
+        if (statut === "Soldout")      setView("soldout");
+        else if (statut === "Attente") setView("waiting");
+        else                           setView("landing"); // "Ouvert" ou fallback
         setSlots(data.slots ?? []);
       })
       .catch((err) => {
-        console.error("Failed to load config:", err);
-        // Fallback: show landing so the site is usable
+        console.error("[page] Failed to load config:", err);
         setView("landing");
       });
   }, []);
