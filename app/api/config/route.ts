@@ -5,10 +5,12 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/config
  *
- * Reads the latest active Drop from Airtable and returns:
- *   - statut  : "Ouvert" | "Soldout" | "Attente"
- *   - stock   : remaining stock (number)
- *   - slots   : available delivery slots from "Créneaux" table
+ * Reads all Drops from Airtable and applies priority logic:
+ *   - If at least one Drop is "Ouvert"  → statut = "Ouvert"
+ *   - Else if at least one is "Attente" → statut = "Attente"
+ *   - Otherwise                         → statut = "Soldout"
+ *
+ * stock comes from the winning drop (first "Ouvert", or first "Attente").
  *
  * Airtable table: "Drops"
  *   Fields: Statut (single select), Stock (number)
@@ -17,41 +19,39 @@ export const dynamic = "force-dynamic";
  *   Fields: Date (text), Horaire (text), Statut (single select)
  *   Statut values: "Disponible" | "Bientôt complet" | "Complet"
  */
-const VALID_STATUTS = ["Ouvert", "Soldout", "Attente"] as const;
-type Statut = (typeof VALID_STATUTS)[number];
+type Statut = "Ouvert" | "Soldout" | "Attente";
 
 export async function GET() {
   try {
-    // ── 1. Fetch the most recent Drop ──────────────────────────────────────
-    // createdTime is Airtable's built-in system field, always available.
+    // ── 1. Fetch all Drops ─────────────────────────────────────────────────
     const dropsData = await airtableList("Drops", {
-      maxRecords: "1",
       "sort[0][field]":     "createdTime",
       "sort[0][direction]": "desc",
     });
 
-    // 🔍 Debug — visible in Next.js server logs
     console.log("[api/config] Raw Drops response:", JSON.stringify(dropsData, null, 2));
 
-    const drop      = dropsData.records[0];
-    const rawStatut = drop?.fields?.Statut;
+    const drops = dropsData.records;
+    const statuts = drops.map((r) => r.fields?.Statut as string | undefined);
+    console.log("[api/config] All Statut values:", statuts);
 
-    console.log("[api/config] drop.fields:", drop?.fields);
-    console.log("[api/config] Statut raw value:", rawStatut, "| type:", typeof rawStatut);
-
-    // Strict validation — warn if the value is unexpected
+    // ── Priority logic ─────────────────────────────────────────────────────
+    // "Ouvert" > "Attente" > "Soldout"
     let statut: Statut;
-    if (VALID_STATUTS.includes(rawStatut as Statut)) {
-      statut = rawStatut as Statut;
-    } else {
-      console.warn(
-        `[api/config] Unexpected Statut value: "${rawStatut}" — defaulting to "Attente".` +
-        ` Expected one of: ${VALID_STATUTS.join(", ")}`
-      );
+    let activeDrop;
+
+    if ((activeDrop = drops.find((r) => r.fields?.Statut === "Ouvert"))) {
+      statut = "Ouvert";
+    } else if ((activeDrop = drops.find((r) => r.fields?.Statut === "Attente"))) {
       statut = "Attente";
+    } else {
+      activeDrop = drops[0]; // most recent, for stock value
+      statut = "Soldout";
     }
 
-    const stock = (drop?.fields?.Stock as number) ?? 0;
+    console.log("[api/config] Resolved statut:", statut, "| activeDrop id:", activeDrop?.id);
+
+    const stock = (activeDrop?.fields?.Stock as number) ?? 0;
 
     // ── 2. Fetch delivery slots ────────────────────────────────────────────
     const creneauxData = await airtableList("Créneaux", {
