@@ -184,19 +184,21 @@ export default function Home() {
       .then((data) => {
         console.log("[page] /api/config response:", data);
         if (data.error) {
+          // API inaccessible → on ne montre pas "disponible" par défaut
           console.error("[page] Config API error:", data.error);
-          setView("landing");
+          setView("soldout");
           return;
         }
         const statut = data.statut as string;
-        if (statut === "Soldout")      setView("soldout");
+        if (statut === "Ouvert")       setView("landing");
         else if (statut === "Attente") setView("waiting");
-        else                           setView("landing"); // "Ouvert" ou fallback
+        else                           setView("soldout"); // "Soldout" ou valeur inattendue
         setSlots(data.slots ?? []);
       })
       .catch((err) => {
+        // Erreur réseau → même logique, ne pas afficher "disponible"
         console.error("[page] Failed to load config:", err);
-        setView("landing");
+        setView("soldout");
       });
   }, []);
 
