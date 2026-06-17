@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type ViewState = "loading" | "landing" | "order" | "soldout" | "waiting";
+type ViewState = "loading" | "landing" | "order" | "thanks" | "soldout" | "waiting";
 
 interface Slot {
   id:     string;
@@ -164,9 +164,8 @@ export default function Home() {
   const [zip,       setZip]       = useState("");
   const [city,      setCity]      = useState("");
   const [errors,    setErrors]    = useState<OrderErrors>({});
-  const [submitting,    setSubmitting]    = useState(false);
-  const [submitMessage, setSubmitMessage] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // ── Notification (soldout / waiting) ──
   const [notifyEmail, setNotifyEmail] = useState("");
@@ -235,8 +234,7 @@ export default function Home() {
     if (Object.keys(errs).length > 0) return;
 
     setSubmitting(true);
-    setSubmitMessage("");
-    setSubmitSuccess(false);
+    setSubmitError("");
 
     try {
       const res = await fetch("/api/commande", {
@@ -254,16 +252,13 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) {
-        setSubmitMessage(data.error ?? "Une erreur est survenue.");
+        setSubmitError(data.error ?? "Une erreur est survenue.");
         return;
       }
 
-      setSubmitSuccess(true);
-      setSubmitMessage(
-        "Commande confirmée\u00a0! Vous recevrez un email de confirmation."
-      );
+      setView("thanks");
     } catch {
-      setSubmitMessage("Impossible de joindre le serveur. Veuillez réessayer.");
+      setSubmitError("Impossible de joindre le serveur. Veuillez réessayer.");
     } finally {
       setSubmitting(false);
     }
@@ -298,6 +293,46 @@ export default function Home() {
   // ── LOADING ───────────────────────────────────────────────────────────────
 
   if (view === "loading") return <LoadingScreen />;
+
+  // ── THANKS ───────────────────────────────────────────────────────────────
+
+  if (view === "thanks") {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
+
+          <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 28, letterSpacing: "8px", fontWeight: 400, color: "var(--violet-dark)", marginBottom: 52, display: "block" }}>
+            BISSALL
+          </span>
+
+          {/* Checkmark */}
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(168,97,162,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 32 }}>
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden>
+              <path d="M6 14.5l5.5 5.5L22 9" stroke="var(--violet)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          <h1 style={{ fontFamily: "var(--font-cormorant)", fontSize: "clamp(32px, 6vw, 48px)", fontStyle: "italic", fontWeight: 400, color: "var(--text)", margin: "0 0 16px" }}>
+            Merci pour votre commande&nbsp;!
+          </h1>
+
+          <p style={{ fontFamily: "var(--font-jost)", fontSize: 14, color: "rgba(26,13,25,0.5)", lineHeight: 1.7, maxWidth: 340, margin: "0 0 48px" }}>
+            Votre commande a bien été enregistrée.<br />
+            Vous recevrez un email de confirmation.<br />
+            Nous vous contacterons avant la livraison.
+          </p>
+
+          <button
+            onClick={() => setView("landing")}
+            className="btn-primary"
+          >
+            RETOUR À L'ACCUEIL
+          </button>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   // ── LANDING ───────────────────────────────────────────────────────────────
 
@@ -544,31 +579,22 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ── Submit feedback ── */}
-            {submitMessage && (
-              <p style={{
-                fontFamily: "var(--font-jost)", fontSize: 13,
-                color: submitSuccess ? "#1E8449" : "var(--error)",
-                textAlign: "center",
-                padding: "12px 16px",
-                background: submitSuccess ? "rgba(46,204,113,0.07)" : "rgba(192,57,43,0.06)",
-                borderRadius: 4,
-              }}>
-                {submitMessage}
+            {/* ── Error feedback ── */}
+            {submitError && (
+              <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "var(--error)", textAlign: "center", padding: "12px 16px", background: "rgba(192,57,43,0.06)", borderRadius: 4 }}>
+                {submitError}
               </p>
             )}
 
             {/* ── Submit button ── */}
-            {!submitSuccess && (
-              <button
-                type="submit"
-                className="btn-primary full"
-                disabled={submitting}
-                style={{ opacity: submitting ? 0.65 : 1, cursor: submitting ? "wait" : "pointer" }}
-              >
-                {submitting ? "ENVOI EN COURS…" : "COMMANDER"}
-              </button>
-            )}
+            <button
+              type="submit"
+              className="btn-primary full"
+              disabled={submitting}
+              style={{ opacity: submitting ? 0.65 : 1, cursor: submitting ? "wait" : "pointer" }}
+            >
+              {submitting ? "ENVOI EN COURS…" : "COMMANDER"}
+            </button>
           </div>
         </form>
 
