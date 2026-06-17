@@ -24,10 +24,8 @@ type Statut = "Ouvert" | "Soldout" | "Attente";
 export async function GET() {
   try {
     // ── 1. Fetch all Drops ─────────────────────────────────────────────────
-    const dropsData = await airtableList("Drops", {
-      "sort[0][field]":     "createdTime",
-      "sort[0][direction]": "desc",
-    });
+    // No sort needed — priority logic (Ouvert > Attente > Soldout) is applied below.
+    const dropsData = await airtableList("Drops");
 
     console.log("[api/config] Raw Drops response:", JSON.stringify(dropsData, null, 2));
 
