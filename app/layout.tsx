@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "BISSALL — Bissap artisanal",
   description: "Bissap artisanal fait maison à Paris. Sans additifs, sans conservateurs.",
+  icons: { icon: "/logo.png", apple: "/logo.png" },
 };
 
 export default function RootLayout({
