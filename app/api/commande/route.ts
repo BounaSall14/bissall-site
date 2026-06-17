@@ -84,10 +84,8 @@ export async function POST(request: Request) {
 
     return Response.json({ success: true, id: record.id });
   } catch (err) {
-    console.error("[api/commande]", err);
-    return Response.json(
-      { error: "Erreur lors de la création de la commande. Veuillez réessayer." },
-      { status: 500 }
-    );
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[api/commande]", message);
+    return Response.json({ error: message }, { status: 500 });
   }
 }
