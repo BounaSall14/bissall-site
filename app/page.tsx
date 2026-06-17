@@ -31,7 +31,7 @@ const PACK = { quantity: 2, price: 8, label: "8,00 €" } as const;
 // ── Shared sub-components ─────────────────────────────────────────────────
 
 function ProductImage({
-  src = "/product.jpg",
+  src = "/Product.jpeg",
   height = 420,
   maxWidth = 320,
   grayscale = false,
