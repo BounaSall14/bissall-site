@@ -76,6 +76,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <span className="section-label">{children}</span>;
 }
 
+function formatSlotDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T12:00:00");
+  if (isNaN(d.getTime())) return dateStr;
+  const formatted = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
 function Field({
   label,
   value,
@@ -472,7 +480,7 @@ export default function Home() {
                       >
                         <div>
                           <div style={{ fontFamily: "var(--font-jost)", fontSize: 14, fontWeight: 500, color: sel ? "var(--violet)" : "var(--text)", marginBottom: 3 }}>
-                            {s.date}
+                            {formatSlotDate(s.date)}
                           </div>
                           <div style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(168,97,162,0.55)" }}>
                             {s.time}
