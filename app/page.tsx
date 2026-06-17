@@ -334,9 +334,6 @@ export default function Home() {
             BISSALL
           </h1>
 
-          <div style={{ marginBottom: 36 }}>
-            <ProductImage />
-          </div>
 
           <p
             style={{
@@ -441,8 +438,7 @@ export default function Home() {
               className="product-section"
               style={{ display: "flex", gap: 40, alignItems: "flex-start" }}
             >
-              <ProductImage height={260} maxWidth={195} />
-              <div style={{ flex: 1, paddingTop: 8 }}>
+<div style={{ flex: 1, paddingTop: 8 }}>
                 <span className="section-label" style={{ marginBottom: 10 }}>Bissap artisanal</span>
                 <h2 style={{
                   fontFamily: "var(--font-cormorant)", fontSize: 34, fontWeight: 500,
@@ -593,9 +589,6 @@ export default function Home() {
           BISSALL
         </span>
 
-        <div style={{ marginBottom: 44 }}>
-          <ProductImage grayscale />
-        </div>
 
         <h1 style={{
           fontFamily: "var(--font-cormorant)",
