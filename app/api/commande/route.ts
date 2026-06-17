@@ -1,4 +1,5 @@
 import { airtableCreate } from "@/lib/airtable";
+import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email";
 
 /**
  * POST /api/commande
@@ -61,6 +62,25 @@ export async function POST(request: Request) {
       "Créneau":      String(slot).trim(),
       "Prix":         Number(price) || 0,
     });
+
+    // ── Send emails (non-blocking — order is confirmed even if email fails) ──
+    const emailData = {
+      firstName: String(firstName).trim(),
+      lastName:  String(lastName).trim(),
+      email:     String(email).trim().toLowerCase(),
+      phone:     String(phone).trim(),
+      address:   String(address).trim(),
+      zip:       String(zip).trim(),
+      city:      String(city).trim(),
+      quantity:  Number(quantity),
+      slot:      String(slot).trim(),
+      price:     Number(price) || 0,
+    };
+
+    Promise.all([
+      sendOrderConfirmation(emailData),
+      sendAdminNotification(emailData),
+    ]).catch((err) => console.error("[api/commande] Email error:", err));
 
     return Response.json({ success: true, id: record.id });
   } catch (err) {
