@@ -24,12 +24,9 @@ interface OrderErrors {
   slot?:      string;
 }
 
-// ── Data ──────────────────────────────────────────────────────────────────
+// ── Pack unique ──────────────────────────────────────────────────────────────
 
-const QUANTITIES = [
-  { value: "2", label: "2", price: "8,00 €", numeric: 8  },
-  { value: "4", label: "4", price: "14,00 €", numeric: 14 },
-] as const;
+const PACK = { quantity: 2, price: 8, label: "8,00 €" } as const;
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 
@@ -158,7 +155,6 @@ export default function Home() {
   const [slots, setSlots] = useState<Slot[]>([]);
 
   // ── Order form ──
-  const [quantity,  setQuantity]  = useState("2");
   const [slot,      setSlot]      = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName,  setLastName]  = useState("");
@@ -225,7 +221,6 @@ export default function Home() {
     return e;
   };
 
-  const selectedQty  = QUANTITIES.find((q) => q.value === quantity)!;
   const selectedSlot = slots.find((s) => s.id === slot);
   const slotLabel    = selectedSlot
     ? `${selectedSlot.date} · ${selectedSlot.time}`
@@ -250,9 +245,9 @@ export default function Home() {
         body: JSON.stringify({
           firstName, lastName, email, phone,
           address, zip, city,
-          quantity: Number(quantity),
+          quantity: PACK.quantity,
           slot:     slotLabel,
-          price:    selectedQty.numeric,
+          price:    PACK.price,
         }),
       });
 
@@ -455,35 +450,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ── Quantity cards ── */}
-            <div>
-              <SectionLabel>Quantité</SectionLabel>
-              <div style={{ display: "flex", gap: 12 }}>
-                {QUANTITIES.map((q) => {
-                  const sel = quantity === q.value;
-                  return (
-                    <button
-                      key={q.value}
-                      type="button"
-                      onClick={() => setQuantity(q.value)}
-                      className={`sel-card${sel ? " selected" : ""}`}
-                      style={{ flex: 1, padding: "20px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
-                    >
-                      <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 36, fontWeight: 500, color: sel ? "var(--violet)" : "var(--text)", lineHeight: 1 }}>
-                        {q.label}
-                      </span>
-                      <span style={{ fontFamily: "var(--font-jost)", fontSize: 11, letterSpacing: "0.5px", color: "rgba(168,97,162,0.5)" }}>
-                        bouteilles
-                      </span>
-                      <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, fontWeight: 500, color: sel ? "var(--violet)" : "rgba(26,13,25,0.5)", marginTop: 4 }}>
-                        {q.price}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* ── Delivery slots (dynamic from API) ── */}
             <div>
               <SectionLabel>Créneau de livraison</SectionLabel>
@@ -554,10 +520,10 @@ export default function Home() {
             <div style={{ background: "rgba(255,252,248,0.7)", borderRadius: 4, padding: "24px 28px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                 <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>
-                  {selectedQty.label} bouteilles × {(selectedQty.numeric / Number(selectedQty.value)).toFixed(2).replace(".", ",")} €
+                  Pack 2 bouteilles × 4,00 €
                 </span>
                 <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>
-                  {selectedQty.price}
+                  {PACK.label}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
@@ -567,7 +533,7 @@ export default function Home() {
               <div style={{ borderTop: "1px solid rgba(168,97,162,0.12)", paddingTop: 18, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, fontWeight: 500, color: "var(--text)" }}>Total</span>
                 <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 30, fontWeight: 500, color: "var(--text)" }}>
-                  {selectedQty.price}
+                  {PACK.label}
                 </span>
               </div>
             </div>
