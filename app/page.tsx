@@ -30,12 +30,13 @@ const PACK = { quantity: 2, price: 8, label: "8,00 €" } as const;
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 
-/** Portrait 3:4 placeholder with a discrete hibiscus SVG — no text */
 function ProductImage({
+  src = "/product.jpg",
   height = 420,
   maxWidth = 320,
   grayscale = false,
 }: {
+  src?: string;
   height?: number;
   maxWidth?: number;
   grayscale?: boolean;
@@ -46,28 +47,19 @@ function ProductImage({
         width: "100%",
         maxWidth,
         height,
-        background: "var(--beige-dark)",
         borderRadius: 4,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        overflow: "hidden",
         flexShrink: 0,
         filter: grayscale ? "grayscale(1) opacity(0.35)" : "none",
         transition: "filter 0.3s",
       }}
     >
-      <svg width="48" height="48" viewBox="0 0 60 60" fill="none" aria-hidden>
-        {[0, 72, 144, 216, 288].map((deg) => (
-          <ellipse
-            key={deg}
-            cx="30" cy="14"
-            rx="5.5" ry="10.5"
-            fill="#C5B5A5"
-            transform={`rotate(${deg} 30 30)`}
-          />
-        ))}
-        <circle cx="30" cy="30" r="6" fill="#B8A898" />
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt="BISSALL — Bissap artisanal 50cl"
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
     </div>
   );
 }
@@ -320,13 +312,23 @@ export default function Home() {
             padding: "60px 24px", textAlign: "center",
           }}
         >
+          {/* Logo illustration */}
+          <div style={{ marginBottom: 28 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="BISSALL"
+              style={{ width: 180, height: 180, objectFit: "contain" }}
+            />
+          </div>
+
           <h1
             style={{
               fontFamily: "var(--font-cormorant)",
               fontSize: "clamp(64px, 14vw, 88px)",
               letterSpacing: "0.22em", fontWeight: 400,
-              color: "var(--text)",
-              margin: "0 0 52px", lineHeight: 1,
+              color: "var(--violet-dark)",
+              margin: "0 0 36px", lineHeight: 1,
             }}
           >
             BISSALL
