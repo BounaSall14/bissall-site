@@ -1,30 +1,12 @@
-import { airtableCreate } from "@/lib/airtable";
+import { airtableList, airtableCreate } from "@/lib/airtable";
 import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email";
 
-/**
- * POST /api/commande
- *
- * Body (JSON):
- *   firstName, lastName, email, phone,
- *   address, zip, city,
- *   quantity (number), slot (string — créneau label), price (number)
- *
- * Creates a record in the Airtable "Commandes" table.
- * Returns { success: true, id } on success.
- *
- * Airtable table: "Commandes"
- *   Fields: Prénom, Nom, Email, Téléphone, Adresse,
- *           Code postal, Ville, Quantité, Créneau, Prix
- */
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
+    if (!body) return Response.json({ error: "Corps de requête invalide." }, { status: 400 });
 
-    if (!body) {
-      return Response.json({ error: "Corps de requête invalide." }, { status: 400 });
-    }
-
-    const { firstName, lastName, email, phone, address, zip, city, quantity, slot, price } = body;
+    const { firstName, lastName, email, phone, address, zip, city, slot, slotId, price } = body;
 
     // ── Validation ─────────────────────────────────────────────────────────
     const missing: string[] = [];
@@ -35,45 +17,61 @@ export async function POST(request: Request) {
     if (!address?.trim())   missing.push("Adresse");
     if (!zip?.trim())       missing.push("Code postal");
     if (!city?.trim())      missing.push("Ville");
-    if (!quantity)          missing.push("Quantité");
-    if (!slot?.trim())      missing.push("Créneau");
+    if (!slotId?.trim())    missing.push("Créneau");
 
     if (missing.length > 0) {
-      return Response.json(
-        { error: `Champs manquants : ${missing.join(", ")}.` },
-        { status: 400 }
-      );
+      return Response.json({ error: `Champs manquants : ${missing.join(", ")}.` }, { status: 400 });
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return Response.json({ error: "Format d'email invalide." }, { status: 400 });
     }
 
-    // ── Create Airtable record ─────────────────────────────────────────────
-    const record = await airtableCreate("Commandes", {
-      "Prénom":       String(firstName).trim(),
-      "Nom":          String(lastName).trim(),
-      "Email":        String(email).trim().toLowerCase(),
-      "Téléphone":    String(phone).trim(),
-      "Adresse":      String(address).trim(),
-      "Code postal":  String(zip).trim(),
-      "Ville":        String(city).trim(),
-      "Quantité":     Number(quantity),
-      "Créneau":      String(slot).trim(),
-      "Prix":         Number(price) || 0,
+    const emailClean = String(email).trim().toLowerCase();
+
+    // ── 1. Find or create client in "Clients" table ────────────────────────
+    const clientsData = await airtableList("Clients", {
+      filterByFormula: `{Email}="${emailClean}"`,
+      maxRecords: "1",
     });
 
-    // ── Send emails (non-blocking — order is confirmed even if email fails) ──
+    let clientId: string;
+    if (clientsData.records.length > 0) {
+      clientId = clientsData.records[0].id;
+    } else {
+      const newClient = await airtableCreate("Clients", {
+        "Email":       emailClean,
+        "Prénom":      String(firstName).trim(),
+        "Nom":         String(lastName).trim(),
+        "Téléphone":   String(phone).trim(),
+        "Adresse":     String(address).trim(),
+        "Code postal": String(zip).trim(),
+        "Ville":       String(city).trim(),
+      });
+      clientId = newClient.id;
+    }
+
+    // ── 2. Create commande with linked records ─────────────────────────────
+    // Quantité is a Single select field with options "2" / "4"
+    // Client and Créneau are linked records — pass as array of IDs
+    const record = await airtableCreate("Commandes", {
+      "Client":   [clientId],
+      "Quantité": "2",
+      "Créneau":  [String(slotId).trim()],
+      "Statut":   "En préparation",
+    });
+
+    // ── 3. Send emails (non-blocking) ──────────────────────────────────────
     const emailData = {
       firstName: String(firstName).trim(),
       lastName:  String(lastName).trim(),
-      email:     String(email).trim().toLowerCase(),
+      email:     emailClean,
       phone:     String(phone).trim(),
       address:   String(address).trim(),
       zip:       String(zip).trim(),
       city:      String(city).trim(),
-      quantity:  Number(quantity),
-      slot:      String(slot).trim(),
+      quantity:  2,
+      slot:      String(slot ?? slotId).trim(),
       price:     Number(price) || 0,
     };
 

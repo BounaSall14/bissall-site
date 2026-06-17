@@ -244,7 +244,8 @@ export default function Home() {
           firstName, lastName, email, phone,
           address, zip, city,
           quantity: PACK.quantity,
-          slot:     slotLabel,
+          slot:     slotLabel,  // label texte pour l'email
+          slotId:   slot,       // ID Airtable pour le linked record
           price:    PACK.price,
         }),
       });

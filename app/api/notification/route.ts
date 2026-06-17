@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
     await airtableCreate("Clients", {
       Email: String(email).trim().toLowerCase(),
-      Note:  "Liste attente",
+      Notes: "Liste attente",
     });
 
     return Response.json({ success: true });
