@@ -664,18 +664,6 @@ export default function Home() {
           </div>
         )}
 
-        <button
-          onClick={() => { setView("landing"); setNotifyDone(false); setNotifyEmail(""); setNotifyError(""); }}
-          style={{
-            fontFamily: "var(--font-jost)", marginTop: 52,
-            fontSize: 11, letterSpacing: "1.5px",
-            color: "rgba(26,13,25,0.28)",
-            background: "none", border: "none",
-            cursor: "pointer", padding: 0,
-          }}
-        >
-          ← Accueil
-        </button>
       </main>
 
       <Footer />
