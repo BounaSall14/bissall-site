@@ -24,9 +24,12 @@ interface OrderErrors {
   slot?:      string;
 }
 
-// ── Pack unique ──────────────────────────────────────────────────────────────
+// ── Tarifs ───────────────────────────────────────────────────────────────────
 
-const PACK = { quantity: 2, price: 8, label: "8,00 €" } as const;
+const QUANTITIES = [
+  { value: "2", label: "2 bouteilles", price: 9,  display: "9,00 €"  },
+  { value: "4", label: "4 bouteilles", price: 15, display: "15,00 €" },
+] as const;
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 
@@ -155,6 +158,7 @@ export default function Home() {
   const [slots, setSlots] = useState<Slot[]>([]);
 
   // ── Order form ──
+  const [quantity,  setQuantity]  = useState<"2" | "4">("2");
   const [slot,      setSlot]      = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName,  setLastName]  = useState("");
@@ -220,6 +224,7 @@ export default function Home() {
     return e;
   };
 
+  const selectedQty  = QUANTITIES.find((q) => q.value === quantity)!;
   const selectedSlot = slots.find((s) => s.id === slot);
   const slotLabel    = selectedSlot
     ? `${selectedSlot.date} · ${selectedSlot.time}`
@@ -243,10 +248,10 @@ export default function Home() {
         body: JSON.stringify({
           firstName, lastName, email, phone,
           address, zip, city,
-          quantity: PACK.quantity,
-          slot:     slotLabel,  // label texte pour l'email
-          slotId:   slot,       // ID Airtable pour le linked record
-          price:    PACK.price,
+          quantity: Number(quantity),
+          slot:     slotLabel,
+          slotId:   slot,
+          price:    selectedQty.price,
         }),
       });
 
@@ -492,6 +497,38 @@ export default function Home() {
               </div>
             </div>
 
+            {/* ── Quantity ── */}
+            <div>
+              <SectionLabel>Quantité</SectionLabel>
+              <div style={{ display: "flex", gap: 12 }}>
+                {QUANTITIES.map((q) => {
+                  const sel = quantity === q.value;
+                  return (
+                    <button
+                      key={q.value}
+                      type="button"
+                      onClick={() => setQuantity(q.value)}
+                      className={`sel-card${sel ? " selected" : ""}`}
+                      style={{ flex: 1, padding: "20px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
+                    >
+                      <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 36, fontWeight: 500, color: sel ? "var(--violet)" : "var(--text)", lineHeight: 1 }}>
+                        {q.value}
+                      </span>
+                      <span style={{ fontFamily: "var(--font-jost)", fontSize: 11, letterSpacing: "0.5px", color: "rgba(168,97,162,0.5)" }}>
+                        bouteilles
+                      </span>
+                      <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, fontWeight: 500, color: sel ? "var(--violet)" : "rgba(26,13,25,0.5)", marginTop: 2 }}>
+                        {q.display}
+                      </span>
+                      <span style={{ fontFamily: "var(--font-jost)", fontSize: 10, color: "#1E8449", letterSpacing: "0.3px" }}>
+                        Livraison incluse
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* ── Delivery slots (dynamic from API) ── */}
             <div>
               <SectionLabel>Créneau de livraison</SectionLabel>
@@ -562,20 +599,20 @@ export default function Home() {
             <div style={{ background: "rgba(255,252,248,0.7)", borderRadius: 4, padding: "24px 28px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                 <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>
-                  Pack 2 bouteilles × 4,00 €
+                  {selectedQty.label} BISSALL 50cl
                 </span>
                 <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>
-                  {PACK.label}
+                  {selectedQty.display}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
                 <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.55)" }}>Livraison</span>
-                <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "#1E8449" }}>Offerte</span>
+                <span style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "#1E8449" }}>Incluse</span>
               </div>
               <div style={{ borderTop: "1px solid rgba(168,97,162,0.12)", paddingTop: 18, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, fontWeight: 500, color: "var(--text)" }}>Total</span>
                 <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 30, fontWeight: 500, color: "var(--text)" }}>
-                  {PACK.label}
+                  {selectedQty.display}
                 </span>
               </div>
             </div>

@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     // Client and Créneau are linked records — pass as array of IDs
     const record = await airtableCreate("Commandes", {
       "Client":   [clientId],
-      "Quantité": "2",
+      "Quantité": String(body.quantity === 4 ? "4" : "2"),
       "Créneau":  [String(slotId).trim()],
       "Statut":   "En préparation",
     });
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       address:   String(address).trim(),
       zip:       String(zip).trim(),
       city:      String(city).trim(),
-      quantity:  2,
+      quantity:  Number(body.quantity) || 2,
       slot:      String(slot ?? slotId).trim(),
       price:     Number(price) || 0,
     };
