@@ -59,12 +59,12 @@ export async function GET() {
 
     console.log("[api/config] Raw Créneaux response:", JSON.stringify(creneauxData, null, 2));
 
-    const VALID_SLOT_STATUTS = ["Disponible", "Bientôt complet"];
     const slots = creneauxData.records
       .filter((r) => {
         const statut = r.fields?.Statut as string | undefined;
         const date   = r.fields?.Date   as string | undefined;
-        return VALID_SLOT_STATUTS.includes(statut ?? "") && date?.trim();
+        // Exclude only explicitly "Complet" slots and entries with no date
+        return statut !== "Complet" && date?.trim();
       })
       .map((r) => ({
         id:     r.id,
