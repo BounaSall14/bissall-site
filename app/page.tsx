@@ -547,26 +547,33 @@ export default function Home() {
                         type="button"
                         onClick={() => { setSlot(s.id); clearErr("slot"); }}
                         className={`sel-card${sel ? " selected" : ""}`}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", textAlign: "left" }}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", textAlign: "left", gap: 16 }}
                       >
-                        <div>
-                          <div style={{ fontFamily: "var(--font-jost)", fontSize: 14, fontWeight: 500, color: sel ? "var(--violet)" : "var(--text)", marginBottom: 3 }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
+                          <span style={{
+                            fontFamily: "var(--font-cormorant)", fontSize: 20, fontWeight: 400,
+                            color: sel ? "var(--violet)" : "var(--text)",
+                            lineHeight: 1.1, flexShrink: 0,
+                          }}>
                             {formatSlotDate(s.date)}
-                          </div>
-                          <div style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(168,97,162,0.55)" }}>
+                          </span>
+                          <span style={{
+                            fontFamily: "var(--font-jost)", fontSize: 12, fontWeight: 300,
+                            color: sel ? "rgba(168,97,162,0.7)" : "rgba(26,13,25,0.38)",
+                            letterSpacing: "0.4px", flexShrink: 0,
+                          }}>
                             {s.time}
-                          </div>
+                          </span>
                         </div>
-                        <span style={{
-                          fontFamily: "var(--font-jost)", fontSize: 10,
-                          letterSpacing: "0.3px", fontWeight: 500,
-                          padding: "3px 10px", borderRadius: 100,
-                          flexShrink: 0, marginLeft: 12,
-                          background: s.status === "filling" ? "rgba(230,126,34,0.1)" : "rgba(46,204,113,0.1)",
-                          color:      s.status === "filling" ? "#B7770D" : "#1E8449",
-                        }}>
-                          {s.status === "filling" ? "Bientôt complet" : "Disponible"}
-                        </span>
+                        {s.status === "filling" && (
+                          <span style={{
+                            fontFamily: "var(--font-jost)", fontSize: 9, fontWeight: 500,
+                            letterSpacing: "1.5px", textTransform: "uppercase",
+                            color: "#B7770D", flexShrink: 0,
+                          }}>
+                            Bientôt complet
+                          </span>
+                        )}
                       </button>
                     );
                   })}
