@@ -69,7 +69,7 @@ export async function GET() {
       .map((r) => ({
         id:     r.id,
         date:   (r.fields?.Date    as string) ?? "",
-        time:   (r.fields?.Horaire as string) ?? "",
+        time:   formatHour(r.fields?.["Heure début"] ?? r.fields?.Horaire),
         status: mapSlotStatus(r.fields?.Statut as string | undefined),
       }));
 
@@ -88,4 +88,11 @@ export async function GET() {
 function mapSlotStatus(s: string | undefined): "available" | "filling" {
   if (s === "Bientôt complet") return "filling";
   return "available";
+}
+
+function formatHour(val: unknown): string {
+  if (val == null || val === "") return "";
+  const n = Number(val);
+  if (!isNaN(n)) return `${n}h00`;
+  return String(val);
 }
