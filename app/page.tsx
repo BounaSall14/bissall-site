@@ -668,7 +668,7 @@ export default function Home() {
           color: "var(--text)",
           margin: "0 0 12px", letterSpacing: "0.02em",
         }}>
-          {isSoldOut ? "Production épuisée" : "Prochaine production en préparation"}
+          {isSoldOut ? "Production épuisée !" : "Prochaine production en préparation"}
         </h1>
 
         <p style={{ fontFamily: "var(--font-jost)", fontSize: 14, color: "rgba(26,13,25,0.42)", letterSpacing: "0.3px", marginBottom: 44 }}>
