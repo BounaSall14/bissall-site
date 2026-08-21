@@ -1,14 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type ViewState = "loading" | "landing" | "order" | "payment" | "thanks" | "soldout" | "waiting";
+type ViewState = "loading" | "landing" | "order" | "thanks" | "soldout" | "waiting";
 
 interface Slot {
   id:     string;
@@ -127,56 +123,6 @@ function Footer() {
   );
 }
 
-// ── Payment step (inside Stripe Elements) ────────────────────────────────
-
-function PaymentStep({ amount, onSuccess }: { amount: string; onSuccess: () => void }) {
-  const stripe   = useStripe();
-  const elements = useElements();
-  const [paying,  setPaying]  = useState(false);
-  const [payError, setPayError] = useState("");
-
-  const handlePay = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setPaying(true);
-    setPayError("");
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: window.location.origin },
-      redirect: "if_required",
-    });
-
-    if (error) {
-      setPayError(error.message ?? "Paiement refusé. Veuillez réessayer.");
-      setPaying(false);
-    } else {
-      onSuccess();
-    }
-  };
-
-  return (
-    <form onSubmit={handlePay} style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      <PaymentElement />
-
-      {payError && (
-        <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "var(--error)", padding: "12px 16px", background: "rgba(192,57,43,0.06)", borderRadius: 4, margin: 0 }}>
-          {payError}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        className="btn-primary full"
-        disabled={!stripe || paying}
-        style={{ opacity: (!stripe || paying) ? 0.65 : 1, cursor: paying ? "wait" : "pointer" }}
-      >
-        {paying ? "PAIEMENT EN COURS…" : `PAYER ${amount}`}
-      </button>
-    </form>
-  );
-}
-
 // ── Loading screen ────────────────────────────────────────────────────────
 
 function LoadingScreen() {
@@ -214,7 +160,6 @@ export default function Home() {
   // ── Order form ──
   const [quantity,  setQuantity]  = useState<"2" | "4">("2");
   const [slot,      setSlot]      = useState("");
-  const [clientSecret, setClientSecret] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName,  setLastName]  = useState("");
   const [email,     setEmail]     = useState("");
@@ -285,7 +230,7 @@ export default function Home() {
     ? `${selectedSlot.date} · ${selectedSlot.time}`
     : slot;
 
-  // ── Form submit → /api/checkout (crée un Payment Intent Stripe) ─────────
+  // ── Form submit → /api/commande ───────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -297,7 +242,7 @@ export default function Home() {
     setSubmitError("");
 
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch("/api/commande", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -317,8 +262,7 @@ export default function Home() {
         return;
       }
 
-      setClientSecret(data.clientSecret);
-      setView("payment");
+      setView("thanks");
     } catch {
       setSubmitError("Impossible de joindre le serveur. Veuillez réessayer.");
     } finally {
@@ -355,80 +299,6 @@ export default function Home() {
   // ── LOADING ───────────────────────────────────────────────────────────────
 
   if (view === "loading") return <LoadingScreen />;
-
-  // ── PAYMENT ───────────────────────────────────────────────────────────────
-
-  if (view === "payment" && clientSecret) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-        <header className="order-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 32px", borderBottom: "1px solid rgba(168,97,162,0.1)" }}>
-          <button
-            onClick={() => setView("order")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-jost)", fontSize: 11, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(168,97,162,0.55)", padding: 0 }}
-          >
-            ← Retour
-          </button>
-          <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, letterSpacing: "6px", fontWeight: 400, color: "var(--violet-dark)" }}>BISSALL</span>
-          <span style={{ width: 60 }} />
-        </header>
-
-        <main className="order-main" style={{ flex: 1, maxWidth: 480, margin: "0 auto", width: "100%", padding: "48px 32px 80px" }}>
-          <h2 style={{ fontFamily: "var(--font-cormorant)", fontSize: 28, fontStyle: "italic", fontWeight: 400, color: "var(--text)", marginBottom: 8 }}>
-            Paiement
-          </h2>
-          <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.45)", marginBottom: 36 }}>
-            {selectedQty.label} · {selectedQty.display} livraison incluse
-          </p>
-
-          <Elements
-            stripe={stripePromise}
-            options={{
-              clientSecret,
-              appearance: {
-                theme: "flat",
-                variables: {
-                  colorPrimary:    "#a861a2",
-                  colorBackground: "#F5EFE6",
-                  colorText:       "#1a0d19",
-                  colorDanger:     "#C0392B",
-                  fontFamily:      "'Jost', system-ui, sans-serif",
-                  borderRadius:    "2px",
-                  spacingUnit:     "4px",
-                },
-                rules: {
-                  ".Input": {
-                    border:          "none",
-                    borderBottom:    "1px solid rgba(168,97,162,0.22)",
-                    borderRadius:    "0",
-                    backgroundColor: "transparent",
-                    padding:         "8px 0",
-                    boxShadow:       "none",
-                  },
-                  ".Input:focus": {
-                    borderBottom: "1px solid #a861a2",
-                    boxShadow:    "none",
-                  },
-                  ".Label": {
-                    fontFamily:    "'Jost', sans-serif",
-                    fontSize:      "10px",
-                    letterSpacing: "2.5px",
-                    textTransform: "uppercase",
-                    color:         "rgba(168,97,162,0.5)",
-                  },
-                },
-              },
-            }}
-          >
-            <PaymentStep
-              amount={selectedQty.display}
-              onSuccess={() => setView("thanks")}
-            />
-          </Elements>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   // ── THANKS ───────────────────────────────────────────────────────────────
 
@@ -768,7 +638,7 @@ export default function Home() {
               disabled={submitting}
               style={{ opacity: submitting ? 0.65 : 1, cursor: submitting ? "wait" : "pointer" }}
             >
-              {submitting ? "CHARGEMENT…" : "PROCÉDER AU PAIEMENT"}
+              {submitting ? "ENVOI EN COURS…" : "COMMANDER"}
             </button>
           </div>
         </form>
