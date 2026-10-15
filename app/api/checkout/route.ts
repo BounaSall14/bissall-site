@@ -7,14 +7,16 @@ export async function POST(request: Request) {
 
     const { firstName, lastName, email, phone, address, zip, city, quantity, slot, slotId, price } = body;
 
-    if (!price || price <= 0) {
+    const VALID_PRICES = [9, 15];
+    const numPrice = Number(price);
+    if (!VALID_PRICES.includes(numPrice)) {
       return Response.json({ error: "Montant invalide." }, { status: 400 });
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(Number(price) * 100), // centimes
       currency: "eur",
-      payment_method_types: ["card"],
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {
         firstName:  String(firstName  ?? "").trim(),
         lastName:   String(lastName   ?? "").trim(),

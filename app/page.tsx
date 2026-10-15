@@ -123,6 +123,12 @@ function Footer() {
       >
         @bissall.drink
       </a>
+      <span style={{ margin: "0 12px", opacity: 0.3 }}>·</span>
+      <a href="/mentions-legales">Mentions légales</a>
+      <span style={{ margin: "0 12px", opacity: 0.3 }}>·</span>
+      <a href="/cgv">CGV</a>
+      <span style={{ margin: "0 12px", opacity: 0.3 }}>·</span>
+      <a href="/confidentialite">Confidentialité</a>
     </footer>
   );
 }

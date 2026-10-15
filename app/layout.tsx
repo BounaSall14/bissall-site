@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import CookieBanner from "./components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "BISSALL — Bissap artisanal",
@@ -26,6 +27,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased" style={{ background: "var(--beige)" }}>
         {children}
+        <CookieBanner />
       </body>
     </html>
   );
