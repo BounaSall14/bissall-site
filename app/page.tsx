@@ -31,7 +31,7 @@ interface OrderErrors {
 // ── Tarifs ───────────────────────────────────────────────────────────────────
 
 const QUANTITIES = [
-  { value: "2", label: "2 bouteilles", price: 1,  display: "1,00 €"  },
+  { value: "2", label: "2 bouteilles", price: 9,  display: "9,00 €"  },
   { value: "4", label: "4 bouteilles", price: 15, display: "15,00 €" },
 ] as const;
 
