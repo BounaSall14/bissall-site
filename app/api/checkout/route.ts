@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(Number(price) * 100), // centimes
       currency: "eur",
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ["card"],
       metadata: {
         firstName:  String(firstName  ?? "").trim(),
         lastName:   String(lastName   ?? "").trim(),
