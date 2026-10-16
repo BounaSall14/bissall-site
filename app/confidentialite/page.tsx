@@ -9,8 +9,9 @@ export default function Confidentialite() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--beige)", display: "flex", flexDirection: "column" }}>
       <header style={{ padding: "24px 32px", borderBottom: "1px solid rgba(168,97,162,0.1)" }}>
-        <Link href="/" style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, letterSpacing: "6px", fontWeight: 400, color: "var(--violet-dark)", textDecoration: "none" }}>
-          BISSALL
+        <Link href="/" style={{ display: "inline-block" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/bissall-logo.png" alt="Bissall" style={{ width: 90, height: "auto", mixBlendMode: "multiply" }} />
         </Link>
       </header>
 

@@ -71,6 +71,17 @@ function ProductImage({
   );
 }
 
+function LogoImg({ width = 120 }: { width?: number }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/bissall-logo.png"
+      alt="Bissall"
+      style={{ width, height: "auto", display: "block", mixBlendMode: "multiply" }}
+    />
+  );
+}
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <span className="section-label">{children}</span>;
 }
@@ -195,17 +206,9 @@ function LoadingScreen() {
         justifyContent: "center",
       }}
     >
-      <span
-        style={{
-          fontFamily: "var(--font-cormorant)",
-          fontSize: 32,
-          letterSpacing: "8px",
-          color: "var(--text)",
-          opacity: 0.4,
-        }}
-      >
-        BISSALL
-      </span>
+      <div style={{ opacity: 0.5 }}>
+        <LogoImg width={160} />
+      </div>
     </div>
   );
 }
@@ -374,7 +377,7 @@ export default function Home() {
           >
             ← Retour
           </button>
-          <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, letterSpacing: "6px", fontWeight: 400, color: "var(--violet-dark)" }}>BISSALL</span>
+          <LogoImg width={88} />
           <span style={{ width: 60 }} />
         </header>
 
@@ -437,9 +440,9 @@ export default function Home() {
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
 
-          <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 28, letterSpacing: "8px", fontWeight: 400, color: "var(--violet-dark)", marginBottom: 52, display: "block" }}>
-            BISSALL
-          </span>
+          <div style={{ marginBottom: 52, display: "flex", justifyContent: "center" }}>
+            <LogoImg width={150} />
+          </div>
 
           {/* Checkmark */}
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(168,97,162,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 32 }}>
@@ -493,17 +496,9 @@ export default function Home() {
             />
           </div>
 
-          <h1
-            style={{
-              fontFamily: "var(--font-cormorant)",
-              fontSize: "clamp(64px, 14vw, 88px)",
-              letterSpacing: "0.22em", fontWeight: 400,
-              color: "var(--violet-dark)",
-              margin: "0 0 36px", lineHeight: 1,
-            }}
-          >
-            BISSALL
-          </h1>
+          <div style={{ margin: "0 0 36px", display: "flex", justifyContent: "center" }}>
+            <LogoImg width={280} />
+          </div>
 
 
           <p
@@ -575,9 +570,7 @@ export default function Home() {
             padding: "16px 40px",
           }}
         >
-          <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 22, fontWeight: 400, letterSpacing: 6, color: "var(--text)" }}>
-            BISSALL
-          </span>
+          <LogoImg width={88} />
           <button
             onClick={() => setView("landing")}
             style={{
@@ -786,9 +779,9 @@ export default function Home() {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
 
-        <span style={{ fontFamily: "var(--font-cormorant)", fontSize: 32, letterSpacing: "8px", fontWeight: 400, color: "var(--text)", marginBottom: 52, display: "block" }}>
-          BISSALL
-        </span>
+        <div style={{ marginBottom: 52, display: "flex", justifyContent: "center" }}>
+          <LogoImg width={150} />
+        </div>
 
 
         <h1 style={{
