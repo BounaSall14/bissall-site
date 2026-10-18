@@ -21,7 +21,7 @@ export default function Confidentialite() {
         </h1>
 
         <Section title="1. Responsable du traitement">
-          <p>[VOTRE NOM / NOM DE L'ENTREPRISE] — [VOTRE ADRESSE], France<br />
+          <p>BISSALL (SIRET 13033844500013) — Paris, France<br />
           Email : <a href="mailto:contact@bissall.fr">contact@bissall.fr</a></p>
         </Section>
 

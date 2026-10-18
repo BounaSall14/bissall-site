@@ -21,7 +21,7 @@ export default function CGV() {
         </h1>
 
         <Section title="1. Objet">
-          <p>Les présentes CGV régissent les ventes de bissap artisanal effectuées via le site www.bissall.fr par [VOTRE NOM / NOM DE L'ENTREPRISE], ci-après "BISSALL".</p>
+          <p>Les présentes CGV régissent les ventes de bissap artisanal effectuées via le site www.bissall.fr par BISSALL (SIRET 13033844500013), ci-après "BISSALL".</p>
         </Section>
 
         <Section title="2. Produits">

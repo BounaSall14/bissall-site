@@ -21,12 +21,12 @@ export default function MentionsLegales() {
         </h1>
 
         <Section title="Éditeur du site">
-          <p><strong>Raison sociale :</strong> [VOTRE NOM / NOM DE L'ENTREPRISE]</p>
-          <p><strong>Statut :</strong> [AUTO-ENTREPRENEUR / SASU / …]</p>
-          <p><strong>SIRET :</strong> [VOTRE NUMÉRO SIRET]</p>
-          <p><strong>Adresse :</strong> [VOTRE ADRESSE], France</p>
+          <p><strong>Raison sociale :</strong> BISSALL</p>
+          <p><strong>Statut :</strong> Auto-entrepreneur</p>
+          <p><strong>SIRET :</strong> 13033844500013</p>
+          <p><strong>Adresse :</strong> Paris, France</p>
           <p><strong>Email :</strong> <a href="mailto:contact@bissall.fr">contact@bissall.fr</a></p>
-          <p><strong>Directeur de la publication :</strong> [VOTRE NOM]</p>
+          <p><strong>Directeur de la publication :</strong> BISSALL</p>
         </Section>
 
         <Section title="Hébergeur">
