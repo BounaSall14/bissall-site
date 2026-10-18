@@ -111,7 +111,7 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
 
     <div class="card" style="background:rgba(168,97,162,0.05);border:1px solid rgba(168,97,162,0.15);">
       <p style="font-size:13px;color:rgba(26,13,25,0.55);margin:0;line-height:1.6;">
-        <strong style="color:#1a0d19;">Paiement à la livraison</strong> — espèces ou virement.<br />
+        <strong style="color:#1a0d19;">Paiement reçu</strong> — votre commande est confirmée.<br />
         Des questions ? Répondez directement à cet email.
       </p>
     </div>`;
