@@ -25,22 +25,24 @@ export async function GET() {
     const activeDropId = activeDrop?.id;
 
     // ── 2. Fetch active delivery slots ────────────────────────────────────────
-    // Return ALL active slots (Actif=1, linked to active drop) including full
-    // ones — the frontend applies zone logic to decide which are selectable.
+    // Fetch all créneaux sorted by date; filter in JS to avoid URL-encoding
+    // issues with filterByFormula and linked-record field type ambiguity.
     const creneauxData = await airtableList("Créneaux", {
-      "filterByFormula":    "{Actif}=TRUE()",
       "sort[0][field]":     "Date",
       "sort[0][direction]": "asc",
     });
 
     const slots = creneauxData.records
       .filter((r) => {
+        // Must have a date
         const date = r.fields?.Date as string | undefined;
         if (!date?.trim()) return false;
-        // Only keep slots linked to the active drop
+        // Must be active (checkbox true; field absent = false)
+        if (!r.fields?.Actif) return false;
+        // Must be linked to the active drop (REST API returns record IDs as strings)
         if (activeDropId) {
-          const dropLinks = r.fields?.Drop as { id: string }[] | undefined;
-          if (!dropLinks?.some((d) => d.id === activeDropId)) return false;
+          const dropLinks = r.fields?.Drop as string[] | undefined;
+          if (!dropLinks?.includes(activeDropId)) return false;
         }
         return true;
       })
