@@ -538,23 +538,6 @@ export default function Home() {
             PASSER COMMANDE
           </button>
 
-          {/* Dev state navigation — barely visible */}
-          <div style={{ marginTop: 64, display: "flex", gap: 32, opacity: 0.25 }}>
-            {(["soldout", "waiting"] as ViewState[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => setView(s)}
-                style={{
-                  fontFamily: "var(--font-jost)", fontSize: 11,
-                  letterSpacing: "1px", color: "var(--violet)",
-                  background: "none", border: "none",
-                  cursor: "pointer", padding: 0,
-                }}
-              >
-                → {s}
-              </button>
-            ))}
-          </div>
         </main>
         <Footer />
       </div>
