@@ -1,5 +1,5 @@
 import { stripe } from "@/lib/stripe";
-import { airtableList, airtableCreate } from "@/lib/airtable";
+import { airtableList, airtableCreate, airtableUpdate } from "@/lib/airtable";
 import { sendOrderConfirmation, sendAdminNotification } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
@@ -34,19 +34,25 @@ export async function POST(request: Request) {
         maxRecords: "1",
       });
 
+      // Address fields to write — including zip so Airtable can compute
+      // "Zone proche (13e/14e)" correctly before the Commande is created.
+      const clientFields = {
+        "Email":       emailClean,
+        "Prénom":      m.firstName,
+        "Nom":         m.lastName,
+        "Téléphone":   m.phone,
+        "Adresse":     m.address,
+        "Code postal": m.zip,
+        "Ville":       m.city,
+      };
+
       let clientId: string;
       if (clientsData.records.length > 0) {
         clientId = clientsData.records[0].id;
+        // Update address in case it changed (zip drives the zone formula)
+        await airtableUpdate("Clients", clientId, clientFields);
       } else {
-        const newClient = await airtableCreate("Clients", {
-          "Email":       emailClean,
-          "Prénom":      m.firstName,
-          "Nom":         m.lastName,
-          "Téléphone":   m.phone,
-          "Adresse":     m.address,
-          "Code postal": m.zip,
-          "Ville":       m.city,
-        });
+        const newClient = await airtableCreate("Clients", clientFields);
         clientId = newClient.id;
       }
 

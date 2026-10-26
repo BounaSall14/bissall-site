@@ -41,6 +41,38 @@ export async function airtableList(
   return res.json() as Promise<AirtableListResponse>;
 }
 
+/** Fetch a single record by ID. */
+export async function airtableGet(
+  table: string,
+  recordId: string,
+): Promise<AirtableRecord> {
+  const url = `${baseUrl()}/${encodeURIComponent(table)}/${recordId}`;
+  const res = await fetch(url, { headers: headers(), cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Airtable GET "${table}/${recordId}" → ${res.status}: ${body}`);
+  }
+  return res.json() as Promise<AirtableRecord>;
+}
+
+/** Update fields on an existing record (PATCH). */
+export async function airtableUpdate(
+  table: string,
+  recordId: string,
+  fields: Record<string, unknown>,
+): Promise<AirtableRecord> {
+  const res = await fetch(`${baseUrl()}/${encodeURIComponent(table)}/${recordId}`, {
+    method: "PATCH",
+    headers: headers(),
+    body: JSON.stringify({ fields }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Airtable PATCH "${table}/${recordId}" → ${res.status}: ${body}`);
+  }
+  return res.json() as Promise<AirtableRecord>;
+}
+
 /** Create a single record in a table. */
 export async function airtableCreate(
   table: string,

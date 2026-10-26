@@ -1,4 +1,10 @@
 import { stripe } from "@/lib/stripe";
+import { airtableGet } from "@/lib/airtable";
+
+function isZoneProche(zip: string): boolean {
+  const clean = zip.replace(/\s/g, "");
+  return clean === "75013" || clean === "75014";
+}
 
 export async function POST(request: Request) {
   try {
@@ -13,8 +19,22 @@ export async function POST(request: Request) {
       return Response.json({ error: "Montant invalide." }, { status: 400 });
     }
 
+    // ── Server-side slot availability check ───────────────────────────────────
+    // Zone-proche clients (75013 / 75014) don't count toward capacity, so
+    // they can always book any active slot.
+    if (slotId && !isZoneProche(String(zip ?? ""))) {
+      const slotRecord = await airtableGet("Créneaux", String(slotId));
+      const placesRestantes = (slotRecord.fields?.["Places restantes"] as number) ?? 0;
+      if (placesRestantes <= 0) {
+        return Response.json(
+          { error: "Ce créneau est maintenant complet. Veuillez en choisir un autre." },
+          { status: 409 },
+        );
+      }
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(Number(price) * 100), // centimes
+      amount: Math.round(numPrice * 100),
       currency: "eur",
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {

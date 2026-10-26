@@ -11,10 +11,15 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 type ViewState = "loading" | "landing" | "order" | "payment" | "thanks" | "soldout" | "waiting";
 
 interface Slot {
-  id:     string;
-  date:   string;
-  time:   string;
-  status: "available" | "filling";
+  id:              string;
+  date:            string;
+  time:            string;
+  placesRestantes: number;
+}
+
+function isZoneProche(zip: string): boolean {
+  const clean = zip.replace(/\s/g, "");
+  return clean === "75013" || clean === "75014";
 }
 
 interface OrderErrors {
@@ -323,6 +328,8 @@ export default function Home() {
 
       if (!res.ok) {
         setSubmitError(data.error ?? "Une erreur est survenue.");
+        // If the slot just became full, clear the selection so the user picks another
+        if (res.status === 409) setSlot("");
         return;
       }
 
@@ -597,29 +604,6 @@ export default function Home() {
             }}
           >
 
-            {/* ── Product info ── */}
-            <div
-              className="product-section"
-              style={{ display: "flex", gap: 40, alignItems: "flex-start" }}
-            >
-<div style={{ flex: 1, paddingTop: 8 }}>
-                <span className="section-label" style={{ marginBottom: 10 }}>Bissap artisanal</span>
-                <h2 style={{
-                  fontFamily: "var(--font-cormorant)", fontSize: 34, fontWeight: 500,
-                  letterSpacing: "0.06em", color: "var(--text)",
-                  margin: "0 0 18px", lineHeight: 1.1,
-                }}>
-                  BISSALL 50cl
-                </h2>
-                <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, lineHeight: 1.7, color: "rgba(26,13,25,0.55)", marginBottom: 8 }}>
-                  Fleurs d&apos;hibiscus · Sucre · Eau filtrée
-                </p>
-                <p style={{ fontFamily: "var(--font-jost)", fontSize: 12, color: "rgba(26,13,25,0.35)" }}>
-                  Sans additifs · Sans conservateurs · Fait maison à Paris
-                </p>
-              </div>
-            </div>
-
             {/* ── Quantity ── */}
             <div>
               <SectionLabel>Quantité</SectionLabel>
@@ -652,60 +636,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ── Delivery slots (dynamic from API) ── */}
-            <div>
-              <SectionLabel>Créneau de livraison</SectionLabel>
-
-              {slots.length === 0 ? (
-                <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.4)", fontStyle: "italic" }}>
-                  Aucun créneau disponible pour le moment.
-                </p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {slots.map((s) => {
-                    const sel = slot === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => { setSlot(s.id); clearErr("slot"); }}
-                        className={`sel-card${sel ? " selected" : ""}`}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", textAlign: "left", gap: 16 }}
-                      >
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
-                          <span style={{
-                            fontFamily: "var(--font-cormorant)", fontSize: 20, fontWeight: 400,
-                            color: sel ? "var(--violet)" : "var(--text)",
-                            lineHeight: 1.1, flexShrink: 0,
-                          }}>
-                            {formatSlotDate(s.date)}
-                          </span>
-                          <span style={{
-                            fontFamily: "var(--font-jost)", fontSize: 12, fontWeight: 300,
-                            color: sel ? "rgba(168,97,162,0.7)" : "rgba(26,13,25,0.38)",
-                            letterSpacing: "0.4px", flexShrink: 0,
-                          }}>
-                            {s.time}
-                          </span>
-                        </div>
-                        {s.status === "filling" && (
-                          <span style={{
-                            fontFamily: "var(--font-jost)", fontSize: 9, fontWeight: 500,
-                            letterSpacing: "1.5px", textTransform: "uppercase",
-                            color: "#B7770D", flexShrink: 0,
-                          }}>
-                            Bientôt complet
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {errors.slot && <span className="field-error" style={{ marginTop: 8 }}>{errors.slot}</span>}
-            </div>
-
-            {/* ── Form ── */}
+            {/* ── Informations de livraison (address before slots) ── */}
             <div>
               <SectionLabel>Informations de livraison</SectionLabel>
               <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
@@ -723,6 +654,69 @@ export default function Home() {
                   <Field label="Ville"       value={city} onChange={(v) => { setCity(v); clearErr("city"); }} error={errors.city} autoComplete="address-level2" />
                 </div>
               </div>
+            </div>
+
+            {/* ── Delivery slots ── */}
+            <div>
+              <SectionLabel>Créneau de livraison</SectionLabel>
+
+              {slots.length === 0 ? (
+                <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.4)", fontStyle: "italic" }}>
+                  Aucun créneau disponible pour le moment.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {slots.map((s) => {
+                    const proche  = isZoneProche(zip);
+                    const complet = s.placesRestantes <= 0;
+                    // Zone-proche clients can always book; others blocked on full slots
+                    const disabled = !proche && complet;
+                    const sel = slot === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => { if (!disabled) { setSlot(s.id); clearErr("slot"); } }}
+                        className={`sel-card${sel ? " selected" : ""}`}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "16px 20px", textAlign: "left", gap: 16,
+                          opacity: disabled ? 0.45 : 1,
+                          cursor: disabled ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
+                          <span style={{
+                            fontFamily: "var(--font-cormorant)", fontSize: 20, fontWeight: 400,
+                            color: sel ? "var(--violet)" : "var(--text)",
+                            lineHeight: 1.1, flexShrink: 0,
+                          }}>
+                            {formatSlotDate(s.date)}
+                          </span>
+                          <span style={{
+                            fontFamily: "var(--font-jost)", fontSize: 12, fontWeight: 300,
+                            color: sel ? "rgba(168,97,162,0.7)" : "rgba(26,13,25,0.38)",
+                            letterSpacing: "0.4px", flexShrink: 0,
+                          }}>
+                            {s.time}
+                          </span>
+                        </div>
+                        {complet && (
+                          <span style={{
+                            fontFamily: "var(--font-jost)", fontSize: 9, fontWeight: 500,
+                            letterSpacing: "1.5px", textTransform: "uppercase",
+                            color: disabled ? "#999" : "#B7770D", flexShrink: 0,
+                          }}>
+                            {disabled ? "Complet" : "Complet — réservé pour vous"}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {errors.slot && <span className="field-error" style={{ marginTop: 8 }}>{errors.slot}</span>}
             </div>
 
             {/* ── Summary ── */}
