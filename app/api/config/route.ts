@@ -50,6 +50,7 @@ export async function GET() {
         id:              r.id,
         date:            (r.fields?.Date as string) ?? "",
         time:            formatHour(r.fields?.["Heure début"]),
+        timeEnd:         formatHour(r.fields?.["Heure fin"]),
         placesRestantes: (r.fields?.["Places restantes"] as number) ?? 0,
       }));
 

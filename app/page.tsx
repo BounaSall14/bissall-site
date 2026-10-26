@@ -14,6 +14,7 @@ interface Slot {
   id:              string;
   date:            string;
   time:            string;
+  timeEnd:         string;
   placesRestantes: number;
 }
 
@@ -703,7 +704,7 @@ export default function Home() {
                             color: sel ? "rgba(168,97,162,0.7)" : "rgba(26,13,25,0.38)",
                             letterSpacing: "0.4px", flexShrink: 0,
                           }}>
-                            {s.time}
+                            {s.time}{s.timeEnd ? ` – ${s.timeEnd}` : ""}
                           </span>
                         </div>
                         {complet && (
