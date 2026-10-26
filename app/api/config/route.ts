@@ -28,7 +28,7 @@ export async function GET() {
     // Return ALL active slots (Actif=1, linked to active drop) including full
     // ones — the frontend applies zone logic to decide which are selectable.
     const creneauxData = await airtableList("Créneaux", {
-      "filterByFormula":    "{Actif}=1",
+      "filterByFormula":    "{Actif}=TRUE()",
       "sort[0][field]":     "Date",
       "sort[0][direction]": "asc",
     });

@@ -660,7 +660,11 @@ export default function Home() {
             <div>
               <SectionLabel>Créneau de livraison</SectionLabel>
 
-              {slots.length === 0 ? (
+              {zip.replace(/\s/g, "").length < 5 ? (
+                <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.4)", fontStyle: "italic" }}>
+                  Renseignez votre adresse et code postal ci-dessus pour voir les créneaux disponibles.
+                </p>
+              ) : slots.length === 0 ? (
                 <p style={{ fontFamily: "var(--font-jost)", fontSize: 13, color: "rgba(26,13,25,0.4)", fontStyle: "italic" }}>
                   Aucun créneau disponible pour le moment.
                 </p>
