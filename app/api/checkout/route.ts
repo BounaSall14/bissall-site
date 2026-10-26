@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null);
     if (!body) return Response.json({ error: "Corps invalide." }, { status: 400 });
 
-    const { firstName, lastName, email, phone, address, zip, city, quantity, slot, slotId, price } = body;
+    const { firstName, lastName, email, phone, address, zip, city, quantity, slot, slotId, price, newsletter } = body;
 
     const VALID_PRICES = [9, 15];
     const numPrice = Number(price);
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
         slot:       String(slot       ?? "").trim(),
         slotId:     String(slotId     ?? "").trim(),
         price:      String(price),
+        newsletter: String(newsletter ?? false),
       },
     });
 

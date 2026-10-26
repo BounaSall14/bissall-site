@@ -237,6 +237,7 @@ export default function Home() {
   const [address,   setAddress]   = useState("");
   const [zip,       setZip]       = useState("");
   const [city,      setCity]      = useState("");
+  const [newsletter, setNewsletter] = useState(false);
   const [errors,    setErrors]    = useState<OrderErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -318,10 +319,11 @@ export default function Home() {
         body: JSON.stringify({
           firstName, lastName, email, phone,
           address, zip, city,
-          quantity: Number(quantity),
-          slot:     slotLabel,
-          slotId:   slot,
-          price:    selectedQty.price,
+          quantity:   Number(quantity),
+          slot:       slotLabel,
+          slotId:     slot,
+          price:      selectedQty.price,
+          newsletter: newsletter,
         }),
       });
 
@@ -632,6 +634,17 @@ export default function Home() {
                   <Field label="Email"     type="email" value={email} onChange={(v) => { setEmail(v); clearErr("email"); }} error={errors.email} autoComplete="email" />
                   <Field label="Téléphone" type="tel"   value={phone} onChange={(v) => { setPhone(v); clearErr("phone"); }} error={errors.phone} autoComplete="tel" />
                 </div>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={newsletter}
+                    onChange={(e) => setNewsletter(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: "var(--violet)", flexShrink: 0, width: 16, height: 16 }}
+                  />
+                  <span style={{ fontFamily: "var(--font-jost)", fontSize: 12, fontWeight: 300, color: "rgba(26,13,25,0.55)", lineHeight: 1.6 }}>
+                    Je veux recevoir les nouvelles de BISSALL par mail (ouverture des commandes, nouvelles productions). Je peux me désinscrire à tout moment.
+                  </span>
+                </label>
                 <Field label="Adresse" value={address} onChange={(v) => { setAddress(v); clearErr("address"); }} error={errors.address} autoComplete="street-address" />
                 <div className="order-grid-cp" style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 24 }}>
                   <Field label="Code postal" value={zip}  onChange={(v) => { setZip(v);  clearErr("zip");  }} error={errors.zip}  autoComplete="postal-code" />

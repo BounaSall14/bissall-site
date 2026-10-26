@@ -80,6 +80,25 @@ export async function POST(request: Request) {
         sendOrderConfirmation(emailData),
         sendAdminNotification(emailData),
       ]);
+
+      if (m.newsletter === "true") {
+        try {
+          const brevoKey = process.env.BREVO_API_KEY;
+          if (brevoKey) {
+            const r = await fetch("https://api.brevo.com/v3/contacts", {
+              method: "POST",
+              headers: { "api-key": brevoKey, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: emailClean,
+                attributes: { PRENOM: m.firstName, NOM: m.lastName },
+                listIds: [2],
+                updateEnabled: true,
+              }),
+            });
+            if (!r.ok) console.error("[webhook/brevo]", await r.text());
+          }
+        } catch (err) { console.error("[webhook/brevo]", err); }
+      }
     } catch (err) {
       console.error("[webhook] Erreur traitement commande:", err);
     }
