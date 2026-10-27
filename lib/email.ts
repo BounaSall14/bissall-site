@@ -1,33 +1,37 @@
 /**
- * Email sending via Resend — server-side only.
- * Requires RESEND_API_KEY in env vars.
- * Requires RESEND_FROM in env vars (e.g. "BISSALL <commandes@bissall.fr>").
+ * Email sending via Brevo transactional API — server-side only.
+ * Requires BREVO_API_KEY in env vars.
+ * Requires BREVO_SENDER_EMAIL in env vars (must be a verified Brevo sender).
+ * Optional: BREVO_SENDER_NAME (defaults to "BISSALL").
  */
 
-const RESEND_URL = "https://api.resend.com/emails";
+const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
 
 function headers() {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("RESEND_API_KEY is not set");
+  const key = process.env.BREVO_API_KEY;
+  if (!key) throw new Error("BREVO_API_KEY is not set");
   return {
-    Authorization: `Bearer ${key}`,
+    "api-key": key,
     "Content-Type": "application/json",
   };
 }
 
-function from() {
-  return process.env.RESEND_FROM ?? "BISSALL <commandes@bissall.fr>";
+function sender() {
+  return {
+    name:  process.env.BREVO_SENDER_NAME  ?? "BISSALL",
+    email: process.env.BREVO_SENDER_EMAIL ?? "contact@bissall.fr",
+  };
 }
 
 async function send(payload: Record<string, unknown>) {
-  const res = await fetch(RESEND_URL, {
+  const res = await fetch(BREVO_URL, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Resend error ${res.status}: ${body}`);
+    throw new Error(`Brevo email error ${res.status}: ${body}`);
   }
   return res.json();
 }
@@ -105,7 +109,7 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
 
       <hr class="divider" />
 
-      <div class="label">Total à régler à la livraison</div>
+      <div class="label">Total</div>
       <div class="total">${data.price.toFixed(2).replace(".", ",")} €</div>
     </div>
 
@@ -117,10 +121,57 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
     </div>`;
 
   return send({
-    from:    from(),
-    to:      [data.email],
-    subject: `Commande confirmée — BISSALL × ${data.quantity} bouteille${data.quantity > 1 ? "s" : ""}`,
-    html:    baseHtml(content),
+    sender:      sender(),
+    to:          [{ email: data.email, name: `${data.firstName} ${data.lastName}` }],
+    replyTo:     sender(),
+    subject:     `Commande confirmée — BISSALL × ${data.quantity} bouteille${data.quantity > 1 ? "s" : ""}`,
+    htmlContent: baseHtml(content),
+  });
+}
+
+/** Reminder email sent to the customer the day before delivery. */
+export async function sendDeliveryReminder(data: {
+  firstName: string;
+  email:     string;
+  slot:      string;
+  address:   string;
+  zip:       string;
+  city:      string;
+  quantity:  number;
+}) {
+  const content = `
+    <div class="card">
+      <p style="font-family:Georgia,serif;font-size:20px;color:#1a0d19;margin:0 0 24px;font-style:italic;">
+        C'est pour demain&nbsp;!
+      </p>
+      <p style="font-size:13px;color:rgba(26,13,25,0.55);line-height:1.6;margin:0 0 24px;">
+        Bonjour ${data.firstName}, votre livraison BISSALL est prévue demain. Voici un récapitulatif.
+      </p>
+
+      <hr class="divider" />
+
+      <div class="label">Créneau de livraison</div>
+      <div class="value">${data.slot}</div>
+
+      <div class="label">Adresse</div>
+      <div class="value">${data.address}, ${data.zip} ${data.city}</div>
+
+      <div class="label">Commande</div>
+      <div class="value">BISSALL 50cl × ${data.quantity} bouteille${data.quantity > 1 ? "s" : ""}</div>
+    </div>
+
+    <div class="card" style="background:rgba(168,97,162,0.05);border:1px solid rgba(168,97,162,0.15);">
+      <p style="font-size:13px;color:rgba(26,13,25,0.55);margin:0;line-height:1.6;">
+        Des questions ? Répondez directement à cet email. À demain&nbsp;!
+      </p>
+    </div>`;
+
+  return send({
+    sender:      sender(),
+    to:          [{ email: data.email, name: data.firstName }],
+    replyTo:     sender(),
+    subject:     "Votre livraison BISSALL est demain 🌺",
+    htmlContent: baseHtml(content),
   });
 }
 
@@ -154,14 +205,15 @@ export async function sendAdminNotification(data: OrderEmailData) {
       <div class="label">Créneau</div>
       <div class="value">${data.slot}</div>
 
-      <div class="label">Total à encaisser</div>
+      <div class="label">Total encaissé</div>
       <div class="total">${data.price.toFixed(2).replace(".", ",")} €</div>
     </div>`;
 
   return send({
-    from:    from(),
-    to:      [adminEmail],
-    subject: `🛍 Nouvelle commande — ${data.firstName} ${data.lastName} (${data.quantity} btl)`,
-    html:    baseHtml(content),
+    sender:      sender(),
+    to:          [{ email: adminEmail, name: "BISSALL Admin" }],
+    replyTo:     { email: data.email, name: `${data.firstName} ${data.lastName}` },
+    subject:     `Nouvelle commande — ${data.firstName} ${data.lastName} (${data.quantity} btl)`,
+    htmlContent: baseHtml(content),
   });
 }
