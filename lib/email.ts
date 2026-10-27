@@ -129,6 +129,26 @@ export async function sendOrderConfirmation(data: OrderEmailData) {
   });
 }
 
+/** Alert email sent to the admin when a critical error occurs (e.g. Airtable write failure). */
+export async function sendAdminAlert(subject: string, details: string) {
+  const adminEmail = process.env.ADMIN_EMAIL ?? "bounina.sall@gmail.com";
+
+  const content = `
+    <div class="card" style="border-left:4px solid #e05a5a;">
+      <p style="font-family:Georgia,serif;font-size:16px;color:#e05a5a;margin:0 0 16px;">
+        Alerte — action requise
+      </p>
+      <pre style="font-size:13px;color:#1a0d19;white-space:pre-wrap;margin:0;">${details}</pre>
+    </div>`;
+
+  return send({
+    sender:      sender(),
+    to:          [{ email: adminEmail, name: "BISSALL Admin" }],
+    subject:     `[BISSALL] ${subject}`,
+    htmlContent: baseHtml(content),
+  });
+}
+
 /** Reminder email sent to the customer the day before delivery. */
 export async function sendDeliveryReminder(data: {
   firstName: string;
