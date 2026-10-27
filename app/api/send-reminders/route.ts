@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       .map((id) => `RECORD_ID()="${id}"`)
       .join(",");
     const commandesData = await airtableList("Commandes", {
-      filterByFormula: `AND(OR(${idFilter}), {Statut}="Payée")`,
+      filterByFormula: `AND(OR(${idFilter}), {Statut}="Payé")`,
     });
 
     const commandes = commandesData.records;

@@ -1,42 +1,41 @@
 /**
- * Email sending via Brevo transactional API — server-side only.
+ * Email sending via Brevo — server-side only.
  * Requires BREVO_API_KEY in env vars.
- * Requires BREVO_SENDER_EMAIL in env vars (must be a verified Brevo sender).
- * Optional: BREVO_SENDER_NAME (defaults to "BISSALL").
  */
 
 const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
+
+// The only verified Brevo sender on this account (contact@bissall.fr, ID 2).
+// Used for admin/alert/reminder emails sent as raw HTML.
+const VERIFIED_SENDER = { name: "Bissall", email: "contact@bissall.fr" };
 
 function headers() {
   const key = process.env.BREVO_API_KEY;
   if (!key) throw new Error("BREVO_API_KEY is not set");
   return {
-    "api-key": key,
+    "api-key":      key,
     "Content-Type": "application/json",
+    "Accept":       "application/json",
   };
 }
 
-function sender() {
-  return {
-    name:  process.env.BREVO_SENDER_NAME  ?? "BISSALL",
-    email: process.env.BREVO_SENDER_EMAIL ?? "contact@bissall.fr",
-  };
-}
-
-async function send(payload: Record<string, unknown>) {
+async function send(payload: Record<string, unknown>, label: string) {
   const res = await fetch(BREVO_URL, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify(payload),
   });
+  const responseBody = await res.text();
+  // Always log status + body so we can diagnose errors in Vercel logs.
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Brevo email error ${res.status}: ${body}`);
+    console.error(`[brevo/${label}] ERREUR ${res.status}:`, responseBody);
+    throw new Error(`Brevo ${res.status}: ${responseBody}`);
   }
-  return res.json();
+  console.log(`[brevo/${label}] OK ${res.status}:`, responseBody);
+  return JSON.parse(responseBody);
 }
 
-// ── Templates ─────────────────────────────────────────────────────────────────
+// ── HTML base (used for admin/alert emails only) ───────────────────────────────
 
 function baseHtml(content: string) {
   return `<!DOCTYPE html>
@@ -85,51 +84,25 @@ export interface OrderEmailData {
   price:      number;
 }
 
-/** Confirmation email sent to the customer. */
+/**
+ * Confirmation email sent to the customer.
+ * Uses Brevo template #2 — sender, subject and design are defined in the template.
+ */
 export async function sendOrderConfirmation(data: OrderEmailData) {
-  const content = `
-    <div class="card">
-      <p style="font-family:Georgia,serif;font-size:20px;color:#1a0d19;margin:0 0 24px;font-style:italic;">
-        Merci ${data.firstName}&nbsp;!
-      </p>
-      <p style="font-size:13px;color:rgba(26,13,25,0.55);line-height:1.6;margin:0 0 24px;">
-        Votre commande a bien été reçue. Nous vous contacterons avant la livraison pour confirmer les détails.
-      </p>
-
-      <hr class="divider" />
-
-      <div class="label">Produit</div>
-      <div class="value">BISSALL 50cl × ${data.quantity} bouteille${data.quantity > 1 ? "s" : ""}</div>
-
-      <div class="label">Créneau de livraison</div>
-      <div class="value">${data.slot}</div>
-
-      <div class="label">Adresse de livraison</div>
-      <div class="value">${data.address}, ${data.zip} ${data.city}</div>
-
-      <hr class="divider" />
-
-      <div class="label">Total</div>
-      <div class="total">${data.price.toFixed(2).replace(".", ",")} €</div>
-    </div>
-
-    <div class="card" style="background:rgba(168,97,162,0.05);border:1px solid rgba(168,97,162,0.15);">
-      <p style="font-size:13px;color:rgba(26,13,25,0.55);margin:0;line-height:1.6;">
-        <strong style="color:#1a0d19;">Paiement reçu</strong> — votre commande est confirmée.<br />
-        Des questions ? Répondez directement à cet email.
-      </p>
-    </div>`;
-
   return send({
-    sender:      sender(),
-    to:          [{ email: data.email, name: `${data.firstName} ${data.lastName}` }],
-    replyTo:     sender(),
-    subject:     `Commande confirmée — BISSALL × ${data.quantity} bouteille${data.quantity > 1 ? "s" : ""}`,
-    htmlContent: baseHtml(content),
-  });
+    to: [{ email: data.email, name: data.firstName }],
+    templateId: 2,
+    params: {
+      PRENOM:   data.firstName,
+      QUANTITE: String(data.quantity),
+      TOTAL:    data.price.toFixed(2).replace(".", ","),
+      CRENEAU:  data.slot,
+      ADRESSE:  `${data.address}, ${data.zip} ${data.city}`,
+    },
+  }, "confirmation");
 }
 
-/** Alert email sent to the admin when a critical error occurs (e.g. Airtable write failure). */
+/** Alert email sent to the admin when a critical error occurs. */
 export async function sendAdminAlert(subject: string, details: string) {
   const adminEmail = process.env.ADMIN_EMAIL ?? "bounina.sall@gmail.com";
 
@@ -142,11 +115,11 @@ export async function sendAdminAlert(subject: string, details: string) {
     </div>`;
 
   return send({
-    sender:      sender(),
+    sender:      VERIFIED_SENDER,
     to:          [{ email: adminEmail, name: "BISSALL Admin" }],
     subject:     `[BISSALL] ${subject}`,
     htmlContent: baseHtml(content),
-  });
+  }, "admin-alert");
 }
 
 /** Reminder email sent to the customer the day before delivery. */
@@ -187,12 +160,12 @@ export async function sendDeliveryReminder(data: {
     </div>`;
 
   return send({
-    sender:      sender(),
+    sender:      VERIFIED_SENDER,
     to:          [{ email: data.email, name: data.firstName }],
-    replyTo:     sender(),
-    subject:     "Votre livraison BISSALL est demain 🌺",
+    replyTo:     VERIFIED_SENDER,
+    subject:     "Votre livraison BISSALL est demain",
     htmlContent: baseHtml(content),
-  });
+  }, "reminder");
 }
 
 /** Notification email sent to the seller when a new order arrives. */
@@ -230,10 +203,10 @@ export async function sendAdminNotification(data: OrderEmailData) {
     </div>`;
 
   return send({
-    sender:      sender(),
+    sender:      VERIFIED_SENDER,
     to:          [{ email: adminEmail, name: "BISSALL Admin" }],
     replyTo:     { email: data.email, name: `${data.firstName} ${data.lastName}` },
     subject:     `Nouvelle commande — ${data.firstName} ${data.lastName} (${data.quantity} btl)`,
     htmlContent: baseHtml(content),
-  });
+  }, "admin-notification");
 }
